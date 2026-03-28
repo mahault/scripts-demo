@@ -660,6 +660,113 @@ waypoints through walls, and `active=None` as reselection trigger.
 
 ---
 
+## Phase 15: Compositional Script Assembly (DONE)
+
+Fragments of behavioural knowledge (weak scripts) are merged into composite
+scripts via graph diffusion retrieval, attention-weighted composition, and
+causal backbone extraction.  Norm compliance emerges from expected free energy
+minimisation over the composed topology (B-matrix), not from hard constraints.
+
+### Theoretical grounding
+
+- Albarracin, Constant, Friston & Ramstead (2021) — "A Variational Approach to Scripts"
+  - Weak scripts = unordered semantic clusters with context-dependent topology
+  - Strong scripts = crystallised temporal orderings via B-matrix consolidation
+  - Norms encoded as expected free energy gradients, not deontic constraints
+- Nair, Austin, Watson & Banaei-Kashani (2026) — "Thinking Machines: A Dual-System Framework"
+  - Spectrally structured memory graph (pattern graph = adjacency matrix A)
+  - Heat kernel diffusion for context-sensitive retrieval (graph diffusion = K_t)
+  - Compositional associative memory via attention-weighted superposition
+  - Causal backbone extraction = attractor-constrained graph traversal
+
+### 15a. Core composition types
+
+- [x] `WeightedPattern` dataclass — fragment + retrieval weight (attention weight alpha_i)
+- [x] `ScriptPattern.source_fragments` — provenance tracking
+- [x] `ScriptPattern.composition_signature` — deduplication key
+- [x] `ScriptPattern.composition_count` — merge count
+- [x] `ScriptPattern.primitive_weights` — per-primitive activation weights
+
+### 15b. Pattern graph + graph diffusion retrieval
+
+- [x] `ScriptRepertoire.enable_compositional_mode()` — builds pattern graph
+- [x] Pattern graph edges: `0.5 * Jaccard(prim_clusters) + 0.5 * cosine(situation_affinities)`
+- [x] `retrieve_composition(query_scores)` — spreads activation across graph, returns WeightedPattern list
+- [x] Graph diffusion modulates retrieval by topological proximity (not just direct relevance)
+
+### 15c. compose_from_patterns
+
+- [x] `ScriptComposer.compose_from_patterns(weighted_patterns, context)` — merges fragments
+- [x] Merge primitive weights: union across fragments, weighted by retrieval activation
+- [x] Build context topology (B-matrix) from merged cluster's pre/postconditions
+- [x] `_derive_causal_sequence()` via backbone extraction
+- [x] Merge situation affinities + norm features (weighted average)
+- [x] Provenance tracking (source_fragments, composition_signature)
+
+### 15d. Backbone extraction algorithm
+
+- [x] Build causal adjacency: A→B edge if `A.postcondition in B.preconditions` and topology weight >= 0.5
+- [x] Compute fan-out per node
+- [x] Find chain roots: fan_out==1 nodes with no fan_out==1 predecessors
+- [x] Follow each root's chain, pick longest as backbone
+- [x] Insert remaining specific nodes before their latest backbone target
+- [x] Append hub nodes (high fan-out) at end sorted by weight
+- [x] Fallback to greedy causal walk if no clear backbone exists
+
+### 15e. 3-tier selection in ScriptRepertoire
+
+- [x] Tier 1: Strong confident match (trajectory_match_threshold=0.6, precision > threshold)
+- [x] Tier 2: Compositional assembly (graph active → diffusion → compose_from_patterns)
+- [x] Tier 3: Scratch composition via ScriptComposer.compose()
+- [x] `_pattern_graph is None` → exact backward compat (Tier 2 skipped)
+
+### 15f. Free energy from topology
+
+- [x] Context topology weight(A→B | C) = base × relevance(A,C) × relevance(B,C)
+  - base = 1.0 if A.postcondition in B.preconditions (causal match), else 0.1
+  - relevance(X,C) = 1.0 if C in X.preconditions, else 0.2
+- [x] G(A→B) = -log(topology_weight + epsilon)
+  - Backbone transitions: high weight ≈ 1.0 → low G ≈ 0.0
+  - Norm-violating shortcuts: low weight ≈ 0.04 → high G ≈ 3.2
+- [x] Norms are soft constraints: violation is possible but free-energy-prohibitive
+
+### 15g. Pipeline-driven demos
+
+- [x] `demo_full_pipeline_anim.py` — 4-panel animation (scene, situation FSM with G values, fragment composition, execution sequence)
+- [x] `demo_animate.py` — single-panel scene animation with gaze and person dynamics
+- [x] Both run the actual composition pipeline; all visualisation derived from output
+- [x] Robot position: lerp between situation postcondition targets
+- [x] Person positions: smooth interpolation between situation-driven targets (walk off-screen, not teleport)
+- [x] Gaze type: derived from primitive skill template (scan, focus, acknowledge, avert)
+- [x] Free energy values: computed from real topology, not hardcoded
+
+### 15h. Domain primitives (reception desk scenario)
+
+- [x] 5 domain primitives: scan-environment, position-in-queue, wait-for-turn, approach-counter, engage-staff
+- [x] 5 weak fragments: observe_scene, queue_position, wait_patiently, approach_service, courtesy_space
+- [x] Composed sequence: 9 primitives in backbone-extracted order
+- [x] Causal chain: open_area → scene_assessed → in_queue → ready_for_service → at_counter → interaction
+- [x] No single fragment contains the full queue-joining norm — it emerges from composition
+
+### Tests
+
+- [x] 8 emergent behavior tests (test_compositional_assembly.py)
+- [x] All 734 tests passing (726 original + 8 new)
+
+### Mapping to Thinking Machines architecture
+
+| Our component | Thinking Machines equivalent | Section |
+|---|---|---|
+| Pattern graph | Memory graph G = (V, E) | 2.2.10 |
+| Graph diffusion retrieval | Heat kernel diffusion K_t = exp(-tL) | Eq. 50-54 |
+| compose_from_patterns | Compositional associative memory (attention-weighted superposition) | 2.2.9, Eq. 48 |
+| Backbone extraction | Attractor-constrained graph traversal | 2.2.11 |
+| Context topology (B-matrix) | Transition model P(s'|s,a) | 2.2.13 |
+| G = -log(w + eps) | Variational surprise -log P(o) | Eq. 38 |
+| 3-tier selection | Metacognitive control via persistent free energy | Eq. 69 |
+
+---
+
 ## Future: Projective Consciousness Model (PCM) integration
 
 - [ ] Projective geometry for perspective-taking in ToM (Rudrauf et al. 2023)
@@ -688,14 +795,14 @@ waypoints through walls, and `active=None` as reselection trigger.
 | Script manager | `cognition/scripts/script_manager.py` | Complete (+ violation + repair + set_sequence) |
 | Script types | `cognition/scripts/script_types.py` | Complete (+ primitive_name) |
 | Weak recognizer | `cognition/scripts/weak_recognizer.py` | Complete |
-| Repertoire types | `cognition/scripts/repertoire_types.py` | Complete (+ semantic clusters, context topology, norm_features) |
+| Repertoire types | `cognition/scripts/repertoire_types.py` | Complete (+ semantic clusters, context topology, norm_features, WeightedPattern, composition provenance) |
 | Behavior tree | `cognition/scripts/behavior_tree.py` | Complete (8 node types) |
 | BT manager | `cognition/scripts/bt_manager.py` | Complete |
 | Primitive library | `cognition/scripts/primitive_library.py` | Complete (13 primitives) |
 | Trajectory tracker | `cognition/scripts/trajectory_tracker.py` | Complete (+ norm_snapshot) |
 | Trajectory inference | `cognition/scripts/trajectory_inference.py` | Complete (dual-mode: cluster + sequence) |
-| Script composer | `cognition/scripts/script_composer.py` | Complete (EFE-based + context topology seeding + norm snapshot) |
-| Script repertoire | `cognition/scripts/script_repertoire.py` | Complete (orchestrator + crystallization + norm learning) |
+| Script composer | `cognition/scripts/script_composer.py` | Complete (EFE-based + context topology + norm snapshot + compose_from_patterns + backbone extraction) |
+| Script repertoire | `cognition/scripts/script_repertoire.py` | Complete (orchestrator + crystallization + norm learning + pattern graph + graph diffusion + 3-tier selection) |
 | Learning script mgr | `cognition/scripts/learning_script_manager.py` | Complete (decorator) |
 | Norm engine | `cognition/norms/norm_engine.py` | Complete |
 | Norm rules | `cognition/norms/rules.py` | Complete (3 rules + from_profile + set_norm_features) |
@@ -727,4 +834,4 @@ waypoints through walls, and `active=None` as reselection trigger.
 | Variational engine | `cognition/planning/variational_engine.py` | Complete (VFE + EFE computation) |
 | Unified task ctrl | `cognition/planning/unified_task_controller.py` | Complete (replaces ClearTableManager) |
 
-**Test count: 601 (all passing)**
+**Test count: 734 (all passing)**

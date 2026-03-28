@@ -13,6 +13,7 @@ from architecture_core.core.types import AffectState, PerceptBundle, SkillReques
 from architecture_core.cognition.scripts.repertoire_types import (
     RepertoireConfig,
     ScriptPattern,
+    ScriptPrimitive,
     WeightedPattern,
 )
 from architecture_core.cognition.scripts.script_types import SituationType
@@ -67,6 +68,122 @@ def _reception_fragments() -> list:
             {"reception": 0.4, "corridor": 0.8},
         ),
     ]
+
+
+def _register_reception_primitives(lib: PrimitiveLibrary) -> None:
+    """Register domain primitives for the reception desk scenario.
+
+    These encode the causal chain for queue-joining via specific
+    situation transitions:
+
+        scan-environment -> scene_assessed
+        position-in-queue -> in_queue
+        wait-for-turn -> ready_for_service
+        approach-counter -> at_counter
+        engage-staff -> interaction
+
+    The ordering emerges from the causal pre/postcondition topology --
+    not from explicit sequencing.
+    """
+    domain_prims = [
+        ScriptPrimitive(
+            name="scan-environment",
+            skill_template=SkillRequest(skill="gaze", params={"mode": "scan_area"}),
+            precondition_situations=["open_area", "corridor_encounter"],
+            postcondition_situation="scene_assessed",
+            expected_affect=AffectState(valence=0.0, arousal=0.1),
+            typical_duration_s=3.0,
+            deontic_default="permitted",
+        ),
+        ScriptPrimitive(
+            name="position-in-queue",
+            skill_template=SkillRequest(
+                skill="navigate", params={"intent": "queue", "speed_scale": 0.4},
+            ),
+            precondition_situations=["scene_assessed", "open_area"],
+            postcondition_situation="in_queue",
+            expected_affect=AffectState(valence=0.0, arousal=-0.1),
+            typical_duration_s=4.0,
+            deontic_default="obligatory",
+        ),
+        ScriptPrimitive(
+            name="wait-for-turn",
+            skill_template=SkillRequest(
+                skill="navigate", params={"intent": "wait", "speed_scale": 0.0},
+            ),
+            precondition_situations=["in_queue"],
+            postcondition_situation="ready_for_service",
+            expected_affect=AffectState(valence=0.0, arousal=-0.2),
+            typical_duration_s=10.0,
+            deontic_default="permitted",
+        ),
+        ScriptPrimitive(
+            name="approach-counter",
+            skill_template=SkillRequest(
+                skill="navigate", params={"intent": "approach", "speed_scale": 0.5},
+            ),
+            precondition_situations=["ready_for_service", "open_area"],
+            postcondition_situation="at_counter",
+            expected_affect=AffectState(valence=0.2, arousal=0.1),
+            typical_duration_s=4.0,
+            deontic_default="permitted",
+        ),
+        ScriptPrimitive(
+            name="engage-staff",
+            skill_template=SkillRequest(
+                skill="gaze", params={"mode": "look_at_staff"},
+            ),
+            precondition_situations=["at_counter", "interaction"],
+            postcondition_situation="interaction",
+            expected_affect=AffectState(valence=0.3, arousal=0.1),
+            typical_duration_s=3.0,
+            deontic_default="permitted",
+        ),
+    ]
+    for p in domain_prims:
+        lib.register(p)
+
+
+def _reception_domain_setup():
+    """Full reception desk setup with domain primitives and fragments.
+
+    Returns (library, fragments, repertoire, config).
+    """
+    lib = PrimitiveLibrary()
+    _register_reception_primitives(lib)
+    cfg = RepertoireConfig()
+
+    fragments = [
+        _make_fragment(
+            "observe_scene",
+            {"scan-environment", "gaze-scan"},
+            {"reception": 0.9, "corridor": 0.4},
+        ),
+        _make_fragment(
+            "queue_position",
+            {"position-in-queue", "yield-pass"},
+            {"reception": 0.8, "corridor": 0.3},
+        ),
+        _make_fragment(
+            "wait_patiently",
+            {"wait-for-turn", "wait-acknowledge"},
+            {"reception": 0.7, "corridor": 0.5},
+        ),
+        _make_fragment(
+            "approach_service",
+            {"approach-counter", "gaze-at-agent"},
+            {"reception": 0.9, "open_area": 0.4},
+        ),
+        _make_fragment(
+            "courtesy_space",
+            {"yield-pass", "gaze-avert"},
+            {"reception": 0.3, "corridor": 0.8},
+        ),
+    ]
+
+    rep = ScriptRepertoire(lib, config=cfg, initial_patterns=fragments)
+    rep.enable_compositional_mode()
+    return lib, fragments, rep, cfg
 
 
 # =====================================================================
@@ -506,3 +623,146 @@ class TestReceptionDeskDemo:
             assert uncertain_ratio <= confident_ratio + 0.1, (
                 "Uncertain query should produce more even weight distribution"
             )
+
+
+# =====================================================================
+# Emergent Behavioral Properties
+# =====================================================================
+class TestEmergentBehavior:
+    """Verify that compositional assembly produces queue-respecting
+    behavior from domain primitives with causal pre/postconditions.
+
+    The ordering EMERGES from the causal topology — not from hard-coded
+    sequences.  Domain primitives provide the right generative model;
+    the backbone extraction algorithm discovers the ordering.
+    """
+
+    def _compose_reception(self):
+        """Run the full compositional pipeline with domain primitives."""
+        lib, fragments, rep, cfg = _reception_domain_setup()
+
+        query_scores = {}
+        for name, pat in rep.patterns.items():
+            aff = pat.situation_affinity.get("reception", 0.0)
+            query_scores[name] = aff * pat.precision
+
+        weighted = rep.retrieve_composition(query_scores)
+        composer = ScriptComposer(lib, cfg)
+        return composer.compose_from_patterns(weighted, "reception")
+
+    def test_scan_before_approach(self):
+        """The agent should observe the scene BEFORE approaching.
+
+        scan-environment produces scene_assessed which is a precondition
+        for position-in-queue; approach-counter requires ready_for_service
+        which is downstream.  The backbone chain enforces this ordering.
+        """
+        result = self._compose_reception()
+        seq = result.primitives_sequence
+        assert "scan-environment" in seq, "Should include scan-environment"
+        assert "approach-counter" in seq, "Should include approach-counter"
+        idx_scan = seq.index("scan-environment")
+        idx_approach = seq.index("approach-counter")
+        assert idx_scan < idx_approach, (
+            f"scan-environment (idx={idx_scan}) should come before "
+            f"approach-counter (idx={idx_approach}) in {seq}"
+        )
+
+    def test_position_before_approach(self):
+        """The agent should join the queue BEFORE approaching the counter.
+
+        position-in-queue → in_queue → wait-for-turn → ready_for_service
+        → approach-counter: the causal chain enforces queuing first.
+        """
+        result = self._compose_reception()
+        seq = result.primitives_sequence
+        assert "position-in-queue" in seq
+        assert "approach-counter" in seq
+        idx_pos = seq.index("position-in-queue")
+        idx_approach = seq.index("approach-counter")
+        assert idx_pos < idx_approach, (
+            f"position-in-queue (idx={idx_pos}) should come before "
+            f"approach-counter (idx={idx_approach}) in {seq}"
+        )
+
+    def test_wait_before_approach(self):
+        """The agent should wait for its turn BEFORE approaching.
+
+        wait-for-turn → ready_for_service → approach-counter: the agent
+        doesn't cut the queue.
+        """
+        result = self._compose_reception()
+        seq = result.primitives_sequence
+        assert "wait-for-turn" in seq
+        assert "approach-counter" in seq
+        idx_wait = seq.index("wait-for-turn")
+        idx_approach = seq.index("approach-counter")
+        assert idx_wait < idx_approach, (
+            f"wait-for-turn (idx={idx_wait}) should come before "
+            f"approach-counter (idx={idx_approach}) in {seq}"
+        )
+
+    def test_approach_not_first(self):
+        """The robot should NOT charge directly toward the counter."""
+        result = self._compose_reception()
+        seq = result.primitives_sequence
+        assert seq[0] != "approach-counter", (
+            f"approach-counter should not be the first action, got {seq}"
+        )
+
+    def test_full_queue_backbone_order(self):
+        """The backbone causal chain should appear in order:
+        scan → position → wait → approach.
+
+        This is the core queue-joining behavior, emerging from
+        pre/postcondition chains, not explicit sequencing.
+        """
+        result = self._compose_reception()
+        seq = result.primitives_sequence
+        backbone = ["scan-environment", "position-in-queue",
+                     "wait-for-turn", "approach-counter"]
+        indices = []
+        for prim in backbone:
+            assert prim in seq, f"{prim} should be in composed sequence"
+            indices.append(seq.index(prim))
+        assert indices == sorted(indices), (
+            f"Backbone should be in causal order, got indices {indices} "
+            f"for {backbone} in {seq}"
+        )
+
+    def test_multimodal_behavior(self):
+        """The composed script should include BOTH motor and perceptual
+        primitives from multiple fragments.
+        """
+        result = self._compose_reception()
+        cluster = result.primitive_cluster
+        gaze_prims = {"scan-environment", "gaze-scan", "gaze-at-agent",
+                       "gaze-avert", "engage-staff"}
+        nav_prims = {"position-in-queue", "wait-for-turn", "yield-pass",
+                      "wait-acknowledge", "approach-counter"}
+        assert bool(cluster & gaze_prims), "Should include gaze primitives"
+        assert bool(cluster & nav_prims), "Should include nav primitives"
+
+    def test_richer_than_any_single_fragment(self):
+        """The composed script should be richer than any single fragment."""
+        result = self._compose_reception()
+        _, fragments, _, _ = _reception_domain_setup()
+        cluster = result.primitive_cluster
+        for frag in fragments:
+            if frag.primitive_cluster == cluster:
+                pytest.fail(
+                    f"Composed cluster matches single fragment '{frag.name}'"
+                )
+        assert len(result.source_fragments) >= 2
+
+    def test_causal_ordering_not_arbitrary(self):
+        """Sequence should follow causal structure, not weight or alpha."""
+        result = self._compose_reception()
+        seq = result.primitives_sequence
+        assert seq != sorted(seq), "Should not be alphabetical"
+        weight_sorted = sorted(
+            result.primitive_weights.keys(),
+            key=lambda p: result.primitive_weights.get(p, 0),
+            reverse=True,
+        )
+        assert seq != weight_sorted, "Should not be pure weight order"

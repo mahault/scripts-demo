@@ -171,14 +171,23 @@ class ScriptComposer:
         # 2. Build cluster from merged primitives
         cluster = set(merged_prim_weights.keys())
 
-        # 3. Order by weight for primitives_sequence
-        ordered = sorted(
-            merged_prim_weights.keys(),
-            key=lambda p: merged_prim_weights[p],
-            reverse=True,
+        # 3. Build context topology (needed for causal ordering)
+        all_contexts: Set[str] = set()
+        for prim_name in cluster:
+            prim = self._library.get(prim_name)
+            if prim:
+                all_contexts.update(prim.precondition_situations)
+        if context:
+            all_contexts.add(context)
+        topology = self._build_context_topology(cluster, list(all_contexts))
+
+        # 4. Derive ordering from causal pre/postcondition chains
+        #    (falls back to weight sort if topology has no signal)
+        ordered = self._derive_causal_sequence(
+            cluster, topology, context, merged_prim_weights,
         )
 
-        # 4. Merge situation affinities: weighted average
+        # 5. Merge situation affinities: weighted average
         merged_affinity: Dict[str, float] = {}
         total_weight = sum(wp.weight for wp in weighted_patterns)
         if total_weight > 0:
@@ -189,7 +198,7 @@ class ScriptComposer:
                         + aff * wp.weight / total_weight
                     )
 
-        # 5. Merge norm features: weighted average
+        # 6. Merge norm features: weighted average
         merged_norms: Dict[str, float] = {}
         if total_weight > 0:
             for wp in weighted_patterns:
@@ -198,16 +207,6 @@ class ScriptComposer:
                         merged_norms.get(key, 0.0)
                         + val * wp.weight / total_weight
                     )
-
-        # 6. Build context topology
-        all_contexts: Set[str] = set()
-        for prim_name in cluster:
-            prim = self._library.get(prim_name)
-            if prim:
-                all_contexts.update(prim.precondition_situations)
-        if context:
-            all_contexts.add(context)
-        topology = self._build_context_topology(cluster, list(all_contexts))
 
         # 7. Track provenance
         source_fragments = [wp.pattern.name for wp in weighted_patterns]
@@ -228,6 +227,164 @@ class ScriptComposer:
             composition_count=1,
             composition_signature=composition_signature,
         )
+
+    def _derive_causal_sequence(
+        self,
+        cluster: Set[str],
+        topology: Dict[str, Dict[Tuple[str, str], float]],
+        context: Optional[str] = None,
+        weight_tiebreak: Optional[Dict[str, float]] = None,
+    ) -> List[str]:
+        """Derive primitive ordering from pre/postcondition causal chains.
+
+        Uses **backbone extraction**: finds the longest chain of nodes
+        connected by *unique* causal edges (fan-out == 1), then inserts
+        remaining nodes relative to the backbone.
+
+        Nodes with specific outputs are inserted before their latest
+        backbone target.  Hub nodes (high fan-out postconditions that
+        reach many cluster members) are appended at the end sorted by
+        weight — they represent utility actions, not sequence drivers.
+
+        Falls back to greedy causal walk if no clear backbone exists.
+        """
+        if not cluster:
+            return []
+
+        # Select topology for context
+        if context and context in topology:
+            topo = topology[context]
+        elif topology:
+            topo = next(iter(topology.values()))
+        else:
+            topo = {}
+
+        if not topo:
+            if weight_tiebreak:
+                return sorted(cluster, key=lambda p: weight_tiebreak.get(p, 0),
+                               reverse=True)
+            return sorted(cluster)
+
+        causal_threshold = 0.5
+
+        # Build causal adjacency (directed: A -> B if A.post in B.pre)
+        adj: Dict[str, List[str]] = {p: [] for p in cluster}
+        for (a, b), w in topo.items():
+            if w >= causal_threshold and a in cluster and b in cluster:
+                adj[a].append(b)
+
+        fan_out = {p: len(adj[p]) for p in cluster}
+
+        # --- Backbone extraction ---
+        # Find chain roots: fan_out==1 nodes not preceded by another fan_out==1 node
+        unique_nodes = {p for p in cluster if fan_out[p] == 1}
+        chain_roots = []
+        for p in unique_nodes:
+            predecessors = [a for (a, b), w in topo.items()
+                           if b == p and w >= causal_threshold and a in unique_nodes]
+            if not predecessors:
+                chain_roots.append(p)
+
+        # Follow each root's chain, pick longest
+        best_chain: List[str] = []
+        for root in chain_roots:
+            chain = [root]
+            current = root
+            visited = {root}
+            while fan_out.get(current, 0) == 1 and adj[current]:
+                next_node = adj[current][0]
+                if next_node in visited:
+                    break
+                chain.append(next_node)
+                visited.add(next_node)
+                current = next_node
+            if len(chain) > len(best_chain):
+                best_chain = chain
+
+        if len(best_chain) < 2:
+            # No clear backbone — fall back to greedy walk
+            return self._greedy_causal_walk(cluster, topo, weight_tiebreak)
+
+        backbone = best_chain
+        backbone_set = set(backbone)
+        backbone_pos = {p: i for i, p in enumerate(backbone)}
+        remaining_nodes = [p for p in cluster if p not in backbone_set]
+
+        # --- Insert remaining nodes relative to backbone ---
+        hub_threshold = max(len(cluster) / 3.0, 2.0)
+
+        inserts: Dict[int, List[str]] = {}
+        end_nodes: List[str] = []
+
+        for node in remaining_nodes:
+            targets_in_bb = [backbone_pos[t] for t in adj.get(node, [])
+                            if t in backbone_pos]
+            if targets_in_bb and fan_out.get(node, 0) <= hub_threshold:
+                # Specific node: insert before its latest backbone target
+                insert_at = max(targets_in_bb)
+                inserts.setdefault(insert_at, []).append(node)
+            else:
+                end_nodes.append(node)
+
+        # Build final sequence
+        result: List[str] = []
+        for i, node in enumerate(backbone):
+            if i in inserts:
+                batch = sorted(
+                    inserts[i],
+                    key=lambda p: weight_tiebreak.get(p, 0) if weight_tiebreak else 0,
+                    reverse=True,
+                )
+                result.extend(batch)
+            result.append(node)
+
+        # Append hub/end nodes by weight
+        end_nodes.sort(
+            key=lambda p: weight_tiebreak.get(p, 0) if weight_tiebreak else 0,
+            reverse=True,
+        )
+        result.extend(end_nodes)
+
+        return result
+
+    def _greedy_causal_walk(
+        self,
+        cluster: Set[str],
+        topo: Dict[Tuple[str, str], float],
+        weight_tiebreak: Optional[Dict[str, float]] = None,
+    ) -> List[str]:
+        """Fallback: greedy walk following strongest causal edges."""
+        if not cluster:
+            return []
+
+        remaining = set(cluster)
+
+        # Start from node with highest weight
+        def start_key(p: str) -> float:
+            return weight_tiebreak.get(p, 0.0) if weight_tiebreak else 0.0
+
+        current = max(remaining, key=start_key)
+        sequence = [current]
+        remaining.discard(current)
+
+        while remaining:
+            best_next = None
+            best_w = -1.0
+            best_tie = -1.0
+            for candidate in remaining:
+                w = topo.get((current, candidate), 0.0)
+                tie = weight_tiebreak.get(candidate, 0.0) if weight_tiebreak else 0.0
+                if w > best_w or (w == best_w and tie > best_tie):
+                    best_w = w
+                    best_tie = tie
+                    best_next = candidate
+            if best_next is None:
+                break
+            sequence.append(best_next)
+            remaining.discard(best_next)
+            current = best_next
+
+        return sequence
 
     def _score_primitive(
         self,
