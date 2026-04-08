@@ -4,7 +4,7 @@ A **robot-agnostic social cognition layer** built on active inference. The archi
 
 ## Current Status
 
-**550 tests passing** | Branch: `feat/social-layer-interface`
+**734 tests passing** | Branch: `feat/social-layer-interface`
 
 | Phase | Status |
 |-------|--------|
@@ -23,6 +23,50 @@ A **robot-agnostic social cognition layer** built on active inference. The archi
 
 See [docs/roadmap.md](docs/roadmap.md) for detailed phase descriptions.
 See [docs/phase_validation.md](docs/phase_validation.md) for Webots simulation validation results.
+
+---
+
+## Compositional Assembly Demos
+
+The `demo_variations_anim.py` script runs 10 experiment variants through the real composition pipeline, producing animated GIFs that visualize how **environment structure shapes robot cognition**.
+
+### Set A: Environment Changes (same robot, different space)
+
+| Variant | Environment | Key finding |
+|---------|-------------|-------------|
+| **A1** | Reception desk (baseline) | Full queue norm emerges from stanchions/desk/signs |
+| **A2** | Corridor (one-sided) | Same fragments, different ordering — courtesy_space dominates, queue recedes |
+| **A3** | Degraded reception (stanchions removed) | Robot skips waiting — the norm was in the environment, not the robot |
+| **A4** | Enriched reception (sign + queue) | Sign adds engage-staff but cannot override queue norms (additive composition) |
+| **A5** | Corridor (both sides) | Robot zigzags between pedestrians via proximity-weighted repulsion |
+| **A6** | Sign + no queue cues | Sign displaces queue norms entirely — robot goes directly to counter (7 vs 9 primitives) |
+
+### Set B: System Changes (same environment, different fragment repertoire)
+
+| Variant | Fragments | Key finding |
+|---------|-----------|-------------|
+| **B5** | All 5 (baseline) | Full queue behavior in reception |
+| **B6** | Missing wait_patiently | System lacks wait knowledge — skips waiting phase |
+| **B7** | Extra direct_approach | Conflicting knowledge — adds engage-staff on top of queue |
+| **B8** | Minimal (2 fragments) | Sparse knowledge still composes a viable 4-primitive sequence |
+
+### Key theoretical claims validated
+
+- **Lefebvre**: Change the space, change the cognition (A1 vs A2)
+- **Akrich**: The norm was in the environment, not the robot (A3)
+- **Latour**: Material cues reshape the affordance landscape (A4, A6)
+- **Compositional robustness**: The pipeline degrades gracefully with sparse fragments (B8)
+- **Additive vs substitutive**: Adding cues is additive; displacing cues is substitutive (A4 vs A6)
+
+### Running the demos
+
+```bash
+cd social-layer-feat-social-layer-interface
+python demo_variations_anim.py    # 10 animated GIFs in demo_figures/
+python demo_variations.py         # Static 2x2 comparison PNGs
+```
+
+Each animation shows four panels: top-down scene with gaze, situation state machine with G labels, fragment composition weights, and execution sequence with progress tracking.
 
 ---
 
@@ -100,6 +144,7 @@ See [docs/architecture.md](docs/architecture.md) for the full architecture docum
 - **Primitive Library** — 13 atomic social action units (navigation, handover, pick/place, gaze)
 - **ScriptParticleFilter** — Dual-mode: cluster-membership (weak) vs positional (strong) inference
 - **ScriptComposer** — EFE-based composition producing clusters with context topology
+- **Compositional Assembly** — Graph-based fragment retrieval with diffusion; 3-tier selection (strong match → compositional → scratch); causal ordering via backbone extraction
 - **Crystallization** — B-matrix path extraction transforms unordered cluster → ordered sequence
 - **Consolidation** — Reliable patterns promoted to strong scripts via precision accumulation
 
@@ -237,7 +282,10 @@ src/
 │   └── skills/                 # Skill base + reference impls (handover, pick/place, gaze)
 └── plugins/
     └── tiago_webots/           # TIAGo Webots plugin (nav, handover, pick/place, gaze)
-tests/                          # 510 tests
+tests/                          # 734 tests
+demo_variations.py              # Static 2x2 comparison figures
+demo_variations_anim.py         # 10 animated variant GIFs
+demo_figures/                   # Generated PNGs and GIFs
 docs/
 ├── architecture.md             # Detailed architecture documentation
 └── roadmap.md                  # Phase-by-phase implementation roadmap

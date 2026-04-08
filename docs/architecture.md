@@ -230,6 +230,23 @@ G_compose = w_eff * G_efficiency + w_emp * G_empathy + w_epi * G_epistemic
 
 Composed patterns include both the `primitive_cluster` and a `context_topology` seeded from primitive pre/postcondition overlap. They start weak (precision=0.1) and can strengthen through repeated successful use.
 
+### Compositional Assembly (graph-based fragment retrieval)
+
+When existing patterns partially match a novel situation, the system composes a new script by retrieving and merging relevant fragments:
+
+**3-tier selection:**
+1. **Tier 1** — Strong match: an existing pattern exceeds the trajectory match threshold (precision ~1.3+)
+2. **Tier 2** — Compositional: activate the pattern graph, retrieve fragments via diffusion, and compose them into a new script
+3. **Tier 3** — Scratch compose: no relevant patterns; build from raw primitives
+
+**Pattern graph:** Patterns are connected by Jaccard similarity (shared primitives) and cosine similarity (situation affinity). `retrieve_composition(query_scores)` performs diffusion from high-scoring seed patterns, collecting fragments whose cumulative weight exceeds the retrieval threshold.
+
+**Causal ordering via backbone extraction:** The composed primitive cluster is ordered by extracting the longest chain of fan_out==1 nodes from the context topology. This backbone represents the most constrained (lowest free energy) path through the cluster. Shortcut edges (higher G) represent less likely but possible transitions.
+
+**Context-dependent topology:** The same set of primitives produces different orderings in different contexts. In a reception context, `position-in-queue` precedes `approach-counter`. In a corridor context, `yield-pass` and `gaze-avert` move earlier in the sequence.
+
+**Key property — additive composition:** Fragment merging is additive, not substitutive. Adding a fragment contributes its primitives to the composite but does not suppress primitives from other fragments. To change the behavioural repertoire, the environment must displace the original cues, not merely add new ones. This is validated by the demo variants (A4 vs A6): a "come directly to counter" sign cannot override queue norms unless the queue cues are also removed.
+
 ### Crystallization (weak → strong)
 
 When a pattern meets consolidation thresholds (precision >= 2.0, trajectory_count >= 5, mean_free_energy <= 3.0):
