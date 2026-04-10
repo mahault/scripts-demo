@@ -36,7 +36,7 @@ The `demo_variations_anim.py` script runs 10 experiment variants through the rea
 |---------|-------------|-------------|
 | **A1** | Reception desk (baseline) | Full queue norm emerges from stanchions/desk/signs |
 | **A2** | Corridor (one-sided) | Same fragments, different ordering — courtesy_space dominates, queue recedes |
-| **A3** | Degraded reception (stanchions removed) | Robot skips waiting — the norm was in the environment, not the robot |
+| **A3** | Degraded reception (stanchions removed) | Robot drops from 9 to 6 primitives — queuing and waiting norms vanish with the stanchions |
 | **A4** | Enriched reception (sign + queue) | Sign adds engage-staff but cannot override queue norms (additive composition) |
 | **A5** | Corridor (both sides) | Robot zigzags between pedestrians via proximity-weighted repulsion |
 | **A6** | Sign + no queue cues | Sign displaces queue norms entirely — robot goes directly to counter (7 vs 9 primitives) |

@@ -162,6 +162,7 @@ class VariantConfig:
     annotation: str
     file_tag: str
     scene_type: str = "reception_full"
+    reorder_sparse: bool = False  # apply narrative-phase reordering for sparse topologies
 
 
 VARIANTS = [
@@ -187,11 +188,11 @@ VARIANTS = [
     VariantConfig(
         name="A3: Degraded reception",
         context="reception",
-        fragment_names=["observe_scene", "queue_position",
-                        "approach_service", "courtesy_space"],
+        fragment_names=["observe_scene", "approach_service", "courtesy_space"],
         annotation="Norm was in the environment, not the robot (Akrich)",
         file_tag="A3_degraded_reception",
         scene_type="reception_no_queue",
+        reorder_sparse=True,
     ),
     VariantConfig(
         name="A4: Enriched reception",
@@ -238,6 +239,7 @@ VARIANTS = [
         annotation="System lacks wait knowledge",
         file_tag="B6_missing_fragment",
         scene_type="reception_full",
+        reorder_sparse=True,
     ),
     VariantConfig(
         name="B7: Extra fragment",
@@ -255,6 +257,7 @@ VARIANTS = [
         annotation="Sparse knowledge -- can it still compose?",
         file_tag="B8_minimal_fragments",
         scene_type="reception_full",
+        reorder_sparse=True,
     ),
 ]
 
@@ -301,6 +304,88 @@ DOMAIN_SITUATIONS = {
     "scene_assessed", "in_queue", "ready_for_service",
     "at_counter", "interaction",
 }
+
+
+# Situation phase ordering — used to sort primitives when the backbone
+# extraction produces a poor ordering due to sparse topology.  Each situation
+# gets a phase number reflecting its position in a typical reception encounter.
+# Primitives are split into "advancing" (postcondition phase > 0, pushing the
+# encounter forward) and "returning" (postcondition phase == 0, cycling back to
+# neutral).  Advancing primitives are sorted by postcondition phase (early →
+# late), then returning primitives are appended at the end.  This gives a
+# coherent narrative flow without hardcoding any specific sequence.
+_SITUATION_PHASE = {
+    "open_area": 0,
+    "corridor_encounter": 0,
+    "scene_assessed": 1,
+    "in_queue": 2,
+    "ready_for_service": 3,
+    "at_counter": 4,
+    "interaction": 5,
+    "narrow_passage": 0,
+    "doorway": 0,
+    "hazard": 0,
+    "meeting_point": 5,
+    "handover": 5,
+}
+
+
+def _reorder_by_situation_phase(result: PipelineResult) -> None:
+    """Sort primitives by advancing-then-returning phase for coherent animation.
+
+    The composition pipeline selects the correct primitives (principled).
+    When the topology is too sparse for backbone extraction to find a good
+    ordering, we classify each primitive as *advancing* (postcondition drives
+    the encounter forward, phase > 0) or *returning* (postcondition resets to
+    a neutral situation, phase == 0).  Advancing primitives are sorted by
+    postcondition phase; returning ones are appended at the end, sorted by
+    max precondition phase so that late-stage returns (e.g. gaze-avert from
+    interaction) come after early-stage ones (e.g. gaze-scan from open_area).
+    No per-variant hardcoding; the same algorithm works for any context.
+    """
+    lib = result.library
+
+    advancing = []
+    returning = []
+    for prim_name in result.sequence:
+        prim = lib.get(prim_name)
+        if not prim:
+            returning.append(prim_name)
+            continue
+        post_phase = _SITUATION_PHASE.get(prim.postcondition_situation, 0)
+        if post_phase > 0:
+            # Sort key: postcondition phase, then earliest precondition phase
+            min_pre = min(
+                (_SITUATION_PHASE.get(s, 99) for s in prim.precondition_situations),
+                default=99,
+            )
+            advancing.append((post_phase, min_pre, prim_name))
+        else:
+            # Returning — sort by max precondition phase (late returns last)
+            max_pre = max(
+                (_SITUATION_PHASE.get(s, 0) for s in prim.precondition_situations),
+                default=0,
+            )
+            returning.append((max_pre, prim_name))
+
+    advancing.sort()
+    returning.sort()
+    new_seq = [name for _, _, name in advancing] + [name for _, name in returning]
+    result.sequence = new_seq
+
+    # Rebuild situation chain with the new ordering
+    domain_sit = "open_area"
+    chain = []
+    for prim_name in new_seq:
+        prim = lib.get(prim_name)
+        post_sit = prim.postcondition_situation if prim else domain_sit
+        if post_sit in DOMAIN_SITUATIONS:
+            new_domain = post_sit
+        else:
+            new_domain = domain_sit
+        chain.append((prim_name, domain_sit, new_domain, post_sit))
+        domain_sit = new_domain
+    result.situation_chain = chain
 
 
 def run_pipeline(config: VariantConfig) -> PipelineResult:
@@ -411,7 +496,7 @@ PERSON_A_TARGETS_RECEPTION = {
 PERSON_B_TARGETS_RECEPTION = {
     "open_area": PERSON_IN_QUEUE, "corridor_encounter": PERSON_IN_QUEUE,
     "scene_assessed": PERSON_IN_QUEUE, "in_queue": PERSON_IN_QUEUE,
-    "ready_for_service": PERSON_AT_DESK, "at_counter": EXIT_RIGHT,
+    "ready_for_service": PERSON_AT_DESK, "at_counter": PERSON_AT_DESK,
     "interaction": EXIT_RIGHT,
 }
 
@@ -528,11 +613,58 @@ PERSON_B_TARGETS_SIGN_DIRECT = {
 }
 
 
+# --- No-queue layout (degraded reception: stanchions removed) ---
+# Robot takes a DIRECT path to the counter — no queue detour.
+# scene_assessed is placed WHERE THE QUEUE USED TO BE (≈ y=5.0), so the robot
+# visually walks through the ghost stanchions on its way to the counter.
+# This splits the movement into two smooth segments:
+#   1) entrance → middle of room (through empty queue space)
+#   2) middle of room → counter (short hop)
+SITUATION_POS_NO_QUEUE = {
+    "open_area":          (2.0, 2.0),
+    "corridor_encounter": (2.0, 2.0),
+    "scene_assessed":     (4.0, 5.0),     # where the queue used to be
+    "in_queue":           (4.0, 5.5),     # unused (no queue)
+    "ready_for_service":  (4.5, 6.0),     # unused
+    "at_counter":         (5.2, 7.0),     # at desk — same as baseline
+    "interaction":        (5.5, 7.5),     # interacting — same as baseline
+}
+
+# Without stanchions, person B is NOT in a neat queue line —
+# just standing in the open room area, off to the left side.
+# Contrast with A1 where B stands at (4.0, 5.5) in a precise queue position.
+PERSON_B_NO_QUEUE_POS = (2.2, 4.5)
+
+PERSON_A_TARGETS_NO_QUEUE = {
+    "open_area": PERSON_AT_DESK, "corridor_encounter": PERSON_AT_DESK,
+    "scene_assessed": PERSON_AT_DESK,     # still at desk when robot scans
+    "in_queue": PERSON_AT_DESK,
+    "ready_for_service": EXIT_RIGHT,
+    "at_counter": EXIT_RIGHT,             # finished, left by the time robot arrives
+    "interaction": EXIT_RIGHT,
+}
+# Without stanchions, B has no queue script to follow — just drifts
+# slightly in the space.  Never reaches the desk.  This contrasts with A1
+# where B moves into a precise queue position and then steps up to the desk.
+PERSON_B_DRIFT_END = (3.0, 5.5)
+PERSON_B_TARGETS_NO_QUEUE = {
+    "open_area": PERSON_B_NO_QUEUE_POS,
+    "corridor_encounter": PERSON_B_NO_QUEUE_POS,
+    "scene_assessed": PERSON_B_NO_QUEUE_POS,  # still milling about
+    "in_queue": PERSON_B_NO_QUEUE_POS,
+    "ready_for_service": PERSON_B_NO_QUEUE_POS,
+    "at_counter": (2.5, 5.0),                 # slight drift forward
+    "interaction": PERSON_B_DRIFT_END,         # drifts a bit more, stays off to side
+}
+
+
 def get_situation_pos(scene_type):
     if scene_type in ("corridor", "corridor_both"):
         return SITUATION_POS_CORRIDOR
     if scene_type == "reception_sign_direct":
         return SITUATION_POS_SIGN_DIRECT
+    if scene_type == "reception_no_queue":
+        return SITUATION_POS_NO_QUEUE
     return SITUATION_POS_RECEPTION
 
 
@@ -543,6 +675,8 @@ def get_person_target_maps(scene_type):
         return PERSON_A_TARGETS_CORRIDOR, PERSON_B_TARGETS_CORRIDOR
     if scene_type == "reception_sign_direct":
         return PERSON_A_TARGETS_SIGN_DIRECT, PERSON_B_TARGETS_SIGN_DIRECT
+    if scene_type == "reception_no_queue":
+        return PERSON_A_TARGETS_NO_QUEUE, PERSON_B_TARGETS_NO_QUEUE
     return PERSON_A_TARGETS_RECEPTION, PERSON_B_TARGETS_RECEPTION
 
 
@@ -1290,6 +1424,10 @@ def draw_execution(ax, sequence, lib, current_step, t_frac, frag_colors,
 def make_variant_animation(config: VariantConfig, out_dir: str) -> str:
     print(f"  Running pipeline for {config.name}...")
     result = run_pipeline(config)
+
+    # Sort by situation phase when backbone extraction fails on sparse topology
+    if config.reorder_sparse:
+        _reorder_by_situation_phase(result)
 
     sequence = result.sequence
     chain = result.situation_chain
