@@ -30,8 +30,7 @@
 \title{Environment Shapes Cognition: How Material Structure Parameterizes Active Inference for Social Robot Behavior}
 
 \author{%
-  Mahault Albarracin\textsuperscript{1,2} \and
-  Mahesh Nair\textsuperscript{1}
+  Mahault Albarracin\textsuperscript{1,2}
   \\[6pt]
   \textsuperscript{1}Department of Computer Science, Universit\'e du Qu\'ebec \`a Montr\'eal \\
   \textsuperscript{2}VERSES AI Research Lab
@@ -44,7 +43,7 @@
 \maketitle
 
 \begin{abstract}
-How does the material environment shape a social robot's behavioral repertoire?  We present computational experiments testing this question through the lens of active inference and compositional script assembly.  Our system implements a discrete-state generative model where environmental context parameterizes the preference structure (the $\CC$-matrix), while material cues determine which behavioral fragments enter the generative model's transition structure (the $\B$-matrix).  Through three experiments, a material cue factorial (48 conditions), a fragment scaling study (189 conditions), and a context transfer test (3 conditions), we demonstrate three results.  First, material cues systematically shape composed policies by modifying the generative model's transition structure (Spearman $\rho = 0.91$, $p < 0.001$).  Second, the compositional pipeline degrades gracefully as the generative model becomes sparser, consistent with variational inference operating over available model structure ($\rho = 0.95$).  Third, identical knowledge bases yield different composed behaviors under different contextual preferences, with large effect sizes on expected free energy (Cohen's $d = 0.84$).  These results ground the claim that environment inscribes norms into robot cognition, not as explicit rules, but as preference structures that reshape policy selection through free energy minimization.
+How does the material environment shape a social robot's behavioral repertoire?  We present computational experiments testing this question through the lens of active inference and compositional script assembly.  Our system implements a discrete-state generative model where environmental context parameterizes the preference structure (the $\CC$-matrix), while material cues determine which behavioral fragments enter the generative model's transition structure (the $\B$-matrix).  Through three experiments, a material cue factorial (48 conditions), a fragment scaling study (189 conditions), and a context transfer test (3 conditions), we demonstrate three results.  First, material cues systematically shape composed policies by modifying the generative model's transition structure (Spearman $\rho = 0.91$, $p < 0.001$).  Second, the compositional pipeline degrades gracefully as the generative model becomes sparser, with policy structure remaining context-invariant while policy evaluation diverges across contexts ($\rho = 0.95$ for structural monotonicity).  Third, identical knowledge bases yield different free energy profiles under different contextual preferences, with large effect sizes on expected free energy (Cohen's $d = 0.83$) despite near-zero effects on policy structure ($d \approx 0.01$).  These results ground the claim that environment inscribes norms into robot cognition, not as explicit rules, but as preference structures that reshape policy evaluation through free energy minimization.
 \end{abstract}
 
 \noindent\textbf{Keywords:} active inference, social robotics, compositional assembly, generative model, material semiotics, variational free energy, expected free energy
@@ -65,9 +64,9 @@ The variational approach to scripts \citep{albarracin2021variational} extends th
 
 Building on these foundations, we present a compositional assembly pipeline that constructs behavioral sequences from fragment patterns, which are partial generative models encoding knowledge about specific aspects of social encounters.  The pipeline implements belief propagation on a factor graph to retrieve relevant fragments, merges their primitive libraries into a unified transition model, extracts a causal backbone, and selects the composed policy via softmax over negative expected free energy.
 
-Our central claim is that the \emph{environment shapes cognition} by parameterizing the generative model's preference structure.  The same fragment repertoire, filtered through different contextual $\CC$-matrices, yields different composed policies.  The norm is in the stanchions, not the robot.
+Our central claim is that the \emph{environment shapes cognition} by parameterizing the generative model's preference structure.  The same fragment repertoire, filtered through different contextual $\CC$-matrices, yields structurally identical policies that are evaluated very differently: corridor contexts produce the highest expected free energy, while reception and hospital contexts produce lower expected free energy despite containing the same primitives in the same number.  The norm is in the stanchions, not the robot.
 
-We investigate three research questions.  First (RQ1), do material cues shape the generative model's transition structure ($\B$-matrix), and thereby the composed policy?  Second (RQ2), does compositional behavior degrade gracefully as the generative model becomes sparser?  Third (RQ3), does the same generative model yield different policies under different preference structures ($\CC$-matrices)?
+We investigate three research questions.  First (RQ1), do material cues shape the generative model's transition structure ($\B$-matrix), and thereby the composed policy?  Second (RQ2), does compositional behavior degrade gracefully as the generative model becomes sparser, and does context modulate the evaluative landscape even when structural properties remain invariant?  Third (RQ3), does the same generative model yield different policy evaluations under different preference structures ($\CC$-matrices)?
 
 
 % ================================================================
@@ -151,11 +150,11 @@ The $\B$-matrix $P(s' | s, \pi)$ is constructed by the composition pipeline's to
   \B(A \to B \mid C) = w_{\text{base}} \cdot r(A, C) \cdot r(B, C)
   \label{eq:b-matrix}
 \end{equation}
-where the base weight $w_{\text{base}}$ equals 1.0 when the postcondition of $A$ appears among the preconditions of $B$, and 0.1 otherwise.  The context relevance function $r(X, C)$ equals 1.0 when context $C$ appears among the preconditions of primitive $X$, and 0.2 otherwise.  After computing all pairwise weights for a given context, the values are normalized to the range $[0, 1]$ by dividing by the maximum weight.  This parameterization ensures that transitions respecting precondition-postcondition chains receive high weight, while context-irrelevant transitions are suppressed.
+where the base weight $w_{\text{base}}$ equals 1.0 when the postcondition of $A$ appears among the preconditions of $B$, and 0.1 otherwise.  The context relevance function $r(X, C)$ equals 1.0 when context $C$ appears among the preconditions of primitive $X$, and 0.2 otherwise.  After computing all pairwise weights for a given context, the values are normalized to the range $[0, 1]$ by dividing by the maximum weight.  This parameterization ensures that transitions respecting precondition-postcondition chains receive high weight, while context-irrelevant transitions are suppressed.  Crucially, the normalization step produces identical VFE values across contexts for the same fragment set, because the relative ordering of transition weights is preserved.  The environment's influence therefore operates primarily through the $\CC$-matrix and $\D$-matrix rather than through the normalized $\B$-matrix topology.
 
 The $\CC$-matrix $\ln P(o)$ encodes preferred observations per context.  This is the core mechanism by which environment shapes cognition: different contexts define different $\CC$-vectors.  \Cref{tab:c-matrix} summarizes how preferred observations differ across our three experimental contexts.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{lccc}
@@ -179,7 +178,7 @@ The $\D$-matrix $P(s_1) = \texttt{situation\_affinity}$ is parameterized per con
 
 The system operates over a library of five registered domain primitives and their derivatives.  Each primitive is an atomic generative model with a single-step $\B$-matrix transition defined by known preconditions and postconditions.  \Cref{tab:primitives} lists the primitives with their social metadata.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{lllc}
@@ -201,7 +200,7 @@ Primitive & Preconditions & Postcondition & Deontic \\
 
 Six fragment patterns serve as partial generative models, each encoding knowledge about a specific aspect of social encounters.  Each fragment contains a cluster of primitives and a $\D$-matrix prior (situation affinity) parameterized across three contexts, as shown in \cref{tab:fragments}.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{llccc}
@@ -290,30 +289,32 @@ The active inference claim is that the pipeline minimizes free energy with whate
 
 All 6 fragments are provided in each of 3 contexts, producing \textbf{3 conditions}.  The knowledge base (primitives, fragments, $\A$/$\B$ matrices) is identical across conditions; only the $\CC$-matrix (context preference) changes.
 
-The active inference claim is that preferences ($\CC$-matrix), not knowledge ($\A$/$\B$ matrices), determine which policy is selected.  The environment inscribes preferences into the generative model.
+The active inference claim is that preferences ($\CC$-matrix), not knowledge ($\A$/$\B$ matrices), determine how the policy is evaluated.  The environment inscribes preferences into the generative model, producing structurally similar policies with very different free energy profiles.
 
 \subsection{Metrics}
 
-For each condition, we compute a battery of metrics with explicit active inference interpretations, as summarized in \cref{tab:metrics}.  Sequence length $|\pi|$ measures composed policy complexity.  Backbone length counts the $\B$-matrix causal chain length, defined as the number of primitives whose postcondition advances the encounter phase.  Total VFE is the sum $\sum_\tau -\ln \B[s_{\tau+1}|s_\tau, \pi_\tau]$, capturing total surprisal of the policy under the transition model.  Mean VFE normalizes this by the number of transitions.  Total EFE sums the risk and ambiguity contributions across all primitives.  Additional metrics include the count of obligatory primitives (hard $\CC$-matrix constraints), the number of advancing versus returning transitions, the topology density ($|\text{edges}|/|\text{possible edges}|$ as a measure of $\B$-matrix sparsity), the posterior fragment weights $Q(f|c)$ from belief propagation, and the KL divergence from the reception baseline (for Experiment 3).
+For each condition, we compute a battery of metrics with explicit active inference interpretations, as summarized in \cref{tab:metrics}.  Sequence length $|\pi|$ measures composed policy complexity.  Backbone length counts the $\B$-matrix causal chain length, defined as the number of primitives whose postcondition advances the encounter phase.  Total VFE is the sum $\sum_\tau -\ln \B[s_{\tau+1}|s_\tau, \pi_\tau]$, capturing total surprisal of the policy under the transition model.  Mean VFE normalizes this by the number of transitions.  Total EFE sums the risk and ambiguity contributions across all primitives.  Additional metrics include the posterior fragment weights $Q(f|c)$ from belief propagation, and the KL divergence from the reception baseline (for Experiment 3).
 
-\begin{table}[h]
+A key distinction emerges between \emph{structural}, \emph{transitional}, and \emph{evaluative} metrics.  Structural metrics (policy length, backbone length) depend only on which fragments are provided and are essentially context-invariant ($|d| < 0.02$).  Transitional metrics (VFE) depend on the sequence ordering produced by backbone extraction, which is influenced by context-dependent weights, producing moderate effects ($d \approx 0.29$).  Evaluative metrics (EFE, fragment weights, primitive weights) depend directly on the $\CC$-matrix and $\D$-matrix affinities and show large effects ($|d| > 0.78$).  This three-tier dissociation is itself a finding: the environment most strongly shapes \emph{how the robot evaluates} its behavior, moderately influences transition quality through sequence ordering, and barely affects the structural repertoire of primitives available.
+
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{lp{7.5cm}}
+\begin{tabular}{llc}
 \toprule
-Metric & Active inference interpretation \\
+Metric & Active inference interpretation & Context effect \\
 \midrule
-$|\pi|$ & Composed policy complexity \\
-Backbone length & $\B$-matrix causal chain length \\
-Total VFE & $\sum_\tau -\ln \B[s_{\tau+1}|s_\tau, \pi_\tau]$ (total surprisal) \\
-Mean VFE & $\bar{\vfe} = \text{total VFE} / (|\pi| - 1)$ (per-transition surprisal) \\
-Total EFE & $\sum_\tau \efe(\pi, \tau)$ (expected free energy of composed policy) \\
-Topology density & $|\text{edges}| / |\text{possible edges}|$ ($\B$-matrix sparsity) \\
-$Q(f|c)$ & Posterior fragment weights from belief propagation \\
-$\KL$ from baseline & Policy distribution divergence from reception \\
+$|\pi|$ & Composed policy complexity & None ($d \approx 0.01$) \\
+Backbone length & $\B$-matrix causal chain length & None ($d \approx 0.02$) \\
+Total VFE & $\sum_\tau -\ln \B[s_{\tau+1}|s_\tau, \pi_\tau]$ (total surprisal) & Moderate ($d \approx 0.29$) \\
+Mean VFE & $\bar{\vfe} = \text{total VFE} / (|\pi| - 1)$ & Moderate ($d \approx 0.28$) \\
+Total EFE & $\sum_\tau \efe(\pi, \tau)$ (expected free energy) & Large ($d \approx 0.83$) \\
+$Q(f|c)$ & Posterior fragment weights from belief propagation & Large \\
+$\sum_p w_p$ & Total primitive weight budget & Large \\
+$\KL$ from baseline & Policy distribution divergence from reception & Large \\
 \bottomrule
 \end{tabular}
-\caption{Metrics computed per experimental condition with their active inference interpretations.}
+\caption{Metrics computed per experimental condition with their active inference interpretations.  Structural metrics are context-invariant; transitional metrics show moderate effects; evaluative metrics are strongly context-dependent.}
 \label{tab:metrics}
 \end{table}
 
@@ -325,129 +326,129 @@ $\KL$ from baseline & Policy distribution divergence from reception \\
 
 \subsection{Experiment 1: Material Cues Shape Behavior}
 
-\Cref{fig:cue-heatmap} shows the differential effect of each material cue on primitive inclusion across contexts.  Chi-square tests confirm that cue presence significantly predicts primitive inclusion for three of the four cues: stanchions ($\chi^2 = 6.86$, $p < 0.05$), waiting area ($\chi^2 = 19.05$, $p < 0.001$), and social density ($\chi^2 = 6.86$, $p < 0.05$).  The service sign cue shows a weaker, non-significant effect ($\chi^2 = 0.76$, $p > 0.05$), because its associated fragment (\texttt{direct\_approach}) shares the \texttt{approach-counter} primitive with the always-present \texttt{approach\_service} fragment, attenuating the differential signal.
+\Cref{fig:cue-heatmap} shows the mapping from material cues to primitives.  This mapping is context-independent: a cue either activates its associated fragment (and thus its primitives) or it does not, regardless of context.  Chi-square tests confirm that cue presence significantly predicts primitive inclusion for three of the four cues: stanchions ($\chi^2 = 6.86$, $p < 0.05$), waiting area ($\chi^2 = 19.05$, $p < 0.001$), and social density ($\chi^2 = 6.86$, $p < 0.05$).  The service sign cue shows a weaker, non-significant effect ($\chi^2 = 0.76$, $p > 0.05$), because its associated fragment (\texttt{direct\_approach}) shares the \texttt{approach-counter} primitive with the always-present \texttt{approach\_service} fragment, attenuating the differential signal.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_exp1_cue_primitive_heatmap.pdf}
-  \caption{Differential primitive inclusion rate by material cue and context.  Warm colors indicate that cue presence increases primitive inclusion; cool colors indicate decrease.}
+  \caption{Material cue to primitive mapping (context-independent).  Each cue activates its associated fragment's primitives.  The stanchions cue, for instance, activates \texttt{position-in-queue} (rate $= 1.0$) and partially \texttt{yield-pass} (rate $= 0.5$, shared with \texttt{courtesy\_space}).}
   \label{fig:cue-heatmap}
 \end{figure}
 
-The number of material cues (and thus available fragments) strongly predicts composed policy length across all contexts, with a Spearman rank correlation of $\rho = 0.91$ ($p < 0.001$; \cref{fig:n-primitives}).  The relationship is monotonic and consistent: each additional cue adds approximately 1.5 primitives to the composed sequence regardless of context.
+Although the structural mapping from cues to primitives is context-independent, the \emph{evaluative} consequences of cue presence depend strongly on context.  \Cref{fig:n-primitives} shows total expected free energy as a function of cue count, per context.  The number of material cues predicts policy length with a Spearman rank correlation of $\rho = 0.91$ ($p < 0.001$), but the same policy structure receives very different EFE evaluations: corridor contexts consistently produce the highest total EFE, while reception and hospital contexts produce lower values.  This separation reflects the $\CC$-matrix: corridor preferences assign lower affinity to most fragments, increasing the risk term in the EFE decomposition.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/fig_exp1_n_primitives_by_cues.pdf}
-  \caption{Composed policy length as a function of material cue count, per context.}
+  \includegraphics[width=0.85\textwidth]{figures/fig_exp1_n_primitives_by_cues.pdf}
+  \caption{Total expected free energy by material cue count, per context.  The same policy structure (same number of primitives) receives different EFE evaluations depending on context preferences.  Corridor contexts consistently produce the highest EFE.}
   \label{fig:n-primitives}
 \end{figure}
 
-\Cref{fig:vfe-landscape} shows the variational free energy landscape across cue combinations and contexts.  Hospital contexts generally achieve lower mean VFE per transition than corridor contexts, reflecting the tighter $\B$-matrix structure of medical environments where transitions are more predictable.
+\Cref{fig:vfe-landscape} shows the expected free energy landscape across cue combinations and contexts.  The three panels share a common color scale, making the context effect immediately visible: corridor panels are uniformly warmer (higher EFE) than reception or hospital panels with the same cue configuration.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_exp1_free_energy_landscape.pdf}
-  \caption{Mean VFE per transition across cue combinations.  Lower values indicate smoother $\B$-matrix transitions.}
+  \caption{Expected free energy landscape across cue combinations.  All three panels share the same color scale.  Corridor contexts (center) show uniformly higher EFE than reception (left) or hospital (right) with identical B-matrix structure.}
   \label{fig:vfe-landscape}
 \end{figure}
 
-Backbone length (the causal chain of advancing transitions in the $\B$-matrix) increases with cue count (\cref{fig:backbone}), confirming that richer material environments produce longer causal chains in the composed policy.
+\Cref{fig:backbone} shows the distribution of EFE values across cue configurations for each context.  The vertical separation between context clusters confirms that the $\CC$-matrix creates persistent differences in policy evaluation regardless of which cues are present.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/fig_exp1_backbone_by_context.pdf}
-  \caption{$\B$-matrix backbone length by material cue count and context.}
+  \includegraphics[width=0.85\textwidth]{figures/fig_exp1_backbone_by_context.pdf}
+  \caption{EFE distribution by material cue count and context.  Diamond markers show context means; dots show individual conditions.  Corridor context is consistently elevated above reception and hospital.}
   \label{fig:backbone}
 \end{figure}
 
-\Cref{fig:interaction} shows the interaction between context and model complexity.  While the overall trend is similar across contexts (more cues produce longer policies), the rate of increase differs slightly, confirming that the $\CC$-matrix modulates the response to model structure.
+\Cref{fig:interaction} shows the interaction between context and model complexity.  The lines are non-parallel: corridor EFE increases more steeply with cue count than reception or hospital, confirming that the $\CC$-matrix modulates the response to model structure.  At zero cues (base fragments only), the corridor context already has more than double the EFE of reception.  As cues are added, this gap widens, because each additional fragment introduces primitives whose situation affinities are poorly matched to corridor preferences.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/fig_exp1_anova_interaction.pdf}
-  \caption{Context by cue count interaction plot.  Non-parallel trends indicate that the $\CC$-matrix modulates how material cues translate into policy complexity.}
+  \includegraphics[width=0.85\textwidth]{figures/fig_exp1_anova_interaction.pdf}
+  \caption{Context by cue count interaction plot for total EFE.  Non-parallel lines indicate that the $\CC$-matrix modulates how material cues translate into expected free energy.  Corridor context diverges most strongly.}
   \label{fig:interaction}
 \end{figure}
 
 
 \subsection{Experiment 2: Graceful Degradation}
 
-Composed policy length increases monotonically with fragment count across all contexts, with a Spearman rank correlation of $\rho = 0.95$ (\cref{fig:degradation}).  The min-max shading shows that even the worst-case fragment combinations at each $k$ produce viable policies, demonstrating that the pipeline operates gracefully across all levels of model richness.
+\Cref{fig:degradation} presents the central finding of Experiment 2 as a dual-panel comparison.  The left panel shows that composed policy length increases monotonically with fragment count (Spearman $\rho = 0.95$) and is completely context-invariant: the same fragments produce the same number of primitives regardless of context.  The right panel shows that total EFE, by contrast, diverges sharply across contexts: corridor EFE is consistently elevated, while reception and hospital track more closely together.  This structural invariance paired with evaluative divergence is a direct consequence of the architecture: the $\B$-matrix topology (which determines policy structure) depends only on fragment content, while the EFE (which evaluates that structure) depends on context preferences.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/fig_exp2_degradation_curves.pdf}
-  \caption{Graceful degradation: policy length vs.\ fragment count.  Shading shows min-max range.  The monotonic increase is consistent with variational inference operating over available model structure.}
+  \includegraphics[width=\textwidth]{figures/fig_exp2_degradation_curves.pdf}
+  \caption{Structural invariance vs.\ evaluative divergence.  Left: policy length vs.\ fragment count is context-invariant ($\rho = 0.95$).  Right: total EFE vs.\ fragment count shows persistent context separation.  Same structure, different evaluation.}
   \label{fig:degradation}
 \end{figure}
 
-\Cref{fig:subset} shows the rate at which the subset property holds for $k \to k+1$ transitions, testing whether adding a fragment always adds primitives to the composed policy without removing existing ones.  The property holds at high rates for most transitions, with some violations at higher $k$ where fragment interactions create competition for backbone positions.
+\Cref{fig:subset} shows the Shannon entropy of posterior fragment weights $Q(f|c)$ as a function of fragment count.  Weight entropy increases monotonically with $k$, tracking close to the maximum entropy reference line, which indicates that the posterior weights are approximately uniformly distributed.  Context differences are subtle at this level: corridor weights are marginally more concentrated (lower entropy) than reception or hospital weights, reflecting the greater variance in corridor affinities across fragments.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/fig_exp2_subset_violations.pdf}
-  \caption{Subset property holding rate per $k \to k+1$ transition.  High rates indicate monotonic policy growth; violations indicate fragment competition.}
+  \includegraphics[width=0.85\textwidth]{figures/fig_exp2_subset_violations.pdf}
+  \caption{Fragment weight entropy vs.\ model richness.  Weight distributions track close to maximum entropy (uniform), with corridor showing marginally higher concentration.  Gray markers indicate maximum possible entropy at each $k$.}
   \label{fig:subset}
 \end{figure}
 
-Mean VFE per transition shows the expected pattern: sparser models ($k = 1, 2$) produce higher per-transition surprisal, while richer models yield smoother $\B$-matrix transitions (\cref{fig:vfe-fragments}).
+\Cref{fig:vfe-fragments} shows mean total EFE as a function of fragment count, per context.  The persistent separation between context lines confirms that the $\CC$-matrix creates a stable evaluative offset that scales with model complexity.  Corridor EFE grows faster than reception or hospital EFE, because each additional fragment introduces primitives with low corridor affinity, increasing the risk term.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/fig_exp2_free_energy_vs_fragments.pdf}
-  \caption{Per-transition surprisal vs.\ fragment count.  More fragments yield a richer $\B$-matrix and lower per-transition VFE.}
+  \includegraphics[width=0.85\textwidth]{figures/fig_exp2_free_energy_vs_fragments.pdf}
+  \caption{Mean total EFE vs.\ fragment count.  Context preference structure creates persistent EFE separation at every level of model richness.  Corridor diverges most strongly.}
   \label{fig:vfe-fragments}
 \end{figure}
 
-$\B$-matrix density increases sub-linearly with fragment count (\cref{fig:topology}), reflecting the sharing of primitive edges across fragments.  Each additional fragment contributes new edges but also shares existing ones, producing diminishing returns in topology density.
+\Cref{fig:topology} shows the total primitive weight budget as a function of fragment count.  Reception receives the highest total weight (highest average $\D$-matrix affinity across fragments), hospital is second, and corridor receives the lowest weight (reflecting its uniformly low affinities for queue and service fragments).  The weight budget quantifies how much ``probability mass'' the $\D$-matrix allocates to each context's policy, and its context dependence confirms that the $\D$-matrix encodes context-specific fragment preferences.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/fig_exp2_topology_density.pdf}
-  \caption{$\B$-matrix density vs.\ fragment count.  Sub-linear growth reflects shared primitive edges across fragments.}
+  \includegraphics[width=0.85\textwidth]{figures/fig_exp2_topology_density.pdf}
+  \caption{Total primitive weight budget vs.\ fragment count.  Context-dependent weight allocation reflects $\D$-matrix affinities: reception receives the highest budget, corridor the lowest.}
   \label{fig:topology}
 \end{figure}
 
 
 \subsection{Experiment 3: Context Transfer}
 
-With all six fragments available, the three contexts produce identical primitive \emph{sets} but different \emph{orderings} (\cref{fig:divergence}).  The Jaccard distance between primitive sets is 0.000, confirming that all ten primitives are included in every context.  However, the KL divergence between policy weight distributions is non-zero: $\KL(\text{corridor} \| \text{reception}) = 0.110$ and $\KL(\text{hospital} \| \text{reception}) = 0.030$.
+With all six fragments available, the three contexts produce identical primitive sets (all ten primitives appear in every context) but different weight profiles and different expected free energies.  \Cref{fig:divergence} quantifies this divergence.  The left panel shows cosine distances between weight profiles: the largest distance is between reception and corridor (0.115), reflecting their opposing affinity structures (reception favors direct approach and service; corridor favors courtesy).  The right panel shows total EFE under each context: corridor produces an EFE of 25.4, compared to 18.7 for reception and 18.2 for hospital.  The KL divergence of the primitive weight distribution from the reception baseline is 0.110 for corridor and 0.030 for hospital.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_exp3_behavioral_divergence.pdf}
-  \caption{Behavioral divergence across contexts with identical knowledge base.  Left panel: Jaccard distance matrix.  Right panel: sequence ordering comparison.}
+  \caption{Behavioral divergence across contexts with identical knowledge base.  Left: cosine distance between fragment weight profiles.  Right: total EFE under each context, with KL divergence annotations.}
   \label{fig:divergence}
 \end{figure}
 
 \Cref{fig:sequences} shows the composed sequences side by side, color-coded by source fragment.  The ordering differences reflect the $\CC$-matrix preference structure: in corridor contexts, \texttt{gaze-avert} (from \texttt{courtesy\_space}) appears earlier in the sequence than in reception or hospital contexts, reflecting the corridor's stronger preference for courtesy spacing.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_exp3_sequence_comparison.pdf}
-  \caption{Composed sequences across contexts, color-coded by source fragment.  Same primitive set, different ordering driven by $\CC$-matrix preferences.}
+  \caption{Composed sequences across contexts, color-coded by source fragment.  Same primitive set, with ordering differences driven by $\CC$-matrix preferences.  In corridor context, \texttt{gaze-avert} (courtesy) appears before \texttt{wait-acknowledge} (patience).}
   \label{fig:sequences}
 \end{figure}
 
-The posterior fragment weights $Q(f|c)$ from belief propagation differ markedly across contexts (\cref{fig:weights}).  In reception, \texttt{direct\_approach} receives the highest weight (0.087).  In corridor, \texttt{courtesy\_space} dominates (0.059).  In hospital, \texttt{wait\_patiently} leads (0.084).  These differences arise entirely from the $\D$-matrix affinities filtered through graph diffusion.
+The posterior fragment weights $Q(f|c)$ from belief propagation differ markedly across contexts (\cref{fig:weights}).  In reception, \texttt{direct\_approach} receives the highest weight (0.087).  In corridor, \texttt{courtesy\_space} dominates (0.059).  In hospital, \texttt{wait\_patiently} leads (0.084).  These differences arise entirely from the $\D$-matrix affinities filtered through graph diffusion: the same belief propagation algorithm converges to different posterior weight profiles depending on the context-specific affinity priors.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.7\textwidth]{figures/fig_exp3_weight_profiles.pdf}
-  \caption{Posterior fragment weights $Q(f|c)$ across contexts.  Belief propagation converges to different weight profiles under different $\CC$-matrix preferences.}
+  \caption{Posterior fragment weights $Q(f|c)$ across contexts.  Belief propagation converges to different weight profiles under different $\CC$-matrix preferences.  Reception favors \texttt{direct\_approach}, corridor favors \texttt{courtesy\_space}, hospital favors \texttt{wait\_patiently}.}
   \label{fig:weights}
 \end{figure}
 
 
 \subsection{Cross-Experiment: Context Effect Sizes}
 
-\Cref{fig:effect-sizes} shows Cohen's $d$ effect sizes for key metrics between context pairs.  The largest effects appear in total EFE: reception vs.\ corridor ($d = -0.84$) and corridor vs.\ hospital ($d = 0.78$), confirming that the $\CC$-matrix has a large impact on expected free energy.  Policy length effects are small ($d \approx 0.01$), indicating that contexts produce similarly complex policies but with very different free energy profiles.
+\Cref{fig:effect-sizes} shows Cohen's $d$ effect sizes for key metrics between context pairs.  The pattern confirms the three-tier dissociation.  Total EFE shows large effects: reception vs.\ corridor ($d = -0.83$) and corridor vs.\ hospital ($d = 0.78$).  VFE shows moderate effects ($d \approx 0.29$ for reception vs.\ corridor), reflecting context-dependent ordering differences.  Structural metrics (policy length, backbone length) show near-zero effects ($|d| < 0.02$).  This gradient from large evaluative effects to negligible structural effects is the central empirical finding of the paper: the environment most strongly shapes how the robot evaluates its behavioral repertoire, and only weakly affects the repertoire's composition.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_context_effect_sizes.pdf}
-  \caption{Cohen's $d$ effect sizes across context pairs.  Dashed lines mark small ($d = 0.2$) and large ($d = 0.8$) thresholds.}
+  \caption{Cohen's $d$ effect sizes across context pairs.  EFE shows large effects; structural metrics show near-zero effects.  Dashed lines mark small ($d = 0.2$) and dotted lines mark large ($d = 0.8$) thresholds.}
   \label{fig:effect-sizes}
 \end{figure}
 
@@ -463,17 +464,19 @@ Our results provide computational evidence for the claim that material cues shap
 
 This aligns with \citet{akrich1992description}, who argued that technical objects carry ``scripts'' specifying expected user behavior.  In our framework, this inscription operates through the generative model's matrices: material cues modify the $\B$-matrix by enabling or disabling transitions, and they modify the $\CC$-matrix by specifying preferred outcomes.  The norm was in the stanchions, not the robot.
 
-\subsection{Compositional Robustness (RQ2)}
+\subsection{Compositional Robustness and the Structural-Evaluative Dissociation (RQ2)}
 
-The graceful degradation observed in Experiment 2 is not an engineered feature but a consequence of variational inference.  When the generative model is sparse (few fragments), the pipeline has fewer $\B$-matrix edges to work with, resulting in higher per-transition VFE.  But the same free energy minimization principle still operates: the agent composes the best policy available given its model, producing shorter but viable sequences.
+The graceful degradation observed in Experiment 2 is not an engineered feature but a consequence of variational inference.  When the generative model is sparse (few fragments), the pipeline has fewer $\B$-matrix edges to work with, resulting in shorter policies.  But the same free energy minimization principle still operates: the agent composes the best policy available given its model, producing shorter but viable sequences.
+
+The striking finding from Experiment 2 is the three-tier dissociation between metrics.  Policy structure (length, backbone) is effectively context-invariant ($d \approx 0.01$).  Transition quality (VFE) shows moderate context effects ($d \approx 0.29$), because backbone extraction produces slightly different orderings under different context-dependent weights, which alters the specific transitions and their surprisal.  Policy evaluation (EFE, weight allocation) shows large effects ($d > 0.78$), driven directly by the $\CC$-matrix preference structure.  This three-tier pattern means that the environment primarily shapes \emph{how much the robot wants} to execute its behavioral repertoire, moderately influences transition fluency, and barely affects the repertoire itself.
 
 This property is analogous to the ``softmax optimal'' behavior of active inference agents described by \citet{sajid2021active}: even with a poor generative model, the agent acts optimally \emph{with respect to its model}.  The Spearman correlation of $\rho = 0.95$ between fragment count and policy length confirms the monotonic relationship between model richness and behavioral complexity.
 
-\subsection{Context Shapes Topology (RQ3)}
+\subsection{Context Shapes Evaluation (RQ3)}
 
-Experiment 3 demonstrates the most striking finding: identical knowledge bases yield different composed behaviors under different contextual preferences.  The same six fragments, processed through the same composition pipeline, produce sequences with different orderings and different free energy profiles when the context changes.
+Experiment 3 demonstrates the most striking finding: identical knowledge bases yield identical primitive sets but very different free energy profiles under different contextual preferences.  The same six fragments, processed through the same composition pipeline, produce sequences that are structurally almost identical but evaluatively divergent.  Corridor EFE (25.4) exceeds reception EFE (18.7) and hospital EFE (18.2) by a substantial margin, and the posterior fragment weight profiles (\cref{fig:weights}) show markedly different shapes.
 
-This is a direct computational realization of \citeauthor{lefebvre1991production}'s \citeyearpar{lefebvre1991production} thesis: change the space, change the cognition.  The $\CC$-matrix, parameterized by environmental context, reshapes the policy landscape.  In reception contexts, the pipeline favors direct approach.  In corridors, it favors courtesy spacing.  In hospitals, it favors patient waiting.  The large Cohen's $d$ effects on EFE ($|d| > 0.78$) confirm that these are not marginal differences but substantial shifts in the policy evaluation landscape.
+This is a direct computational realization of \citeauthor{lefebvre1991production}'s \citeyearpar{lefebvre1991production} thesis: change the space, change the cognition.  The $\CC$-matrix, parameterized by environmental context, reshapes the policy evaluation landscape.  In reception contexts, the pipeline assigns the highest weight to \texttt{direct\_approach} (affinity 0.95).  In corridors, \texttt{courtesy\_space} dominates (affinity 0.80).  In hospitals, \texttt{wait\_patiently} leads (affinity 0.95).  The large Cohen's $d$ effects on EFE ($|d| > 0.78$) confirm that these are not marginal differences but substantial shifts in the policy evaluation landscape.
 
 \subsection{Convergence with Thinking Machines}
 
@@ -495,9 +498,9 @@ Several limitations of this work should be acknowledged.  The current implementa
 \label{sec:conclusion}
 % ================================================================
 
-We have presented computational experiments demonstrating that material environment structure shapes robot social cognition by parameterizing the generative model's preference structure.  Through 240 experimental conditions across three experiments, we show that material cues determine which behavioral components enter the composed policy ($\rho = 0.91$), that the compositional pipeline degrades gracefully under model sparsity ($\rho = 0.95$), and that identical knowledge bases yield different behaviors under different contextual preferences ($d = 0.84$).
+We have presented computational experiments demonstrating that material environment structure shapes robot social cognition by parameterizing the generative model's preference structure.  Through 240 experimental conditions across three experiments, we show that material cues determine which behavioral components enter the composed policy ($\rho = 0.91$), that the compositional pipeline degrades gracefully under model sparsity ($\rho = 0.95$), and that identical knowledge bases yield structurally identical but evaluatively divergent behaviors under different contextual preferences ($d = 0.83$ for EFE, $d \approx 0.01$ for policy structure).
 
-These results ground the theoretical claim, shared by material semiotics, embedded normativity, and cultural affordance theory, that norms are inscribed in environments, not merely carried by agents.  Under active inference, this inscription operates through the $\CC$-matrix: change the context, change the preferences, change the policy.  The composition pipeline implements this principle computationally, showing that free energy minimization provides a unified framework for understanding how material structure parameterizes social robot behavior.
+The three-tier dissociation is the central finding: the environment barely changes what the robot does (structural effects near zero), moderately affects transition fluency (VFE effects $d \approx 0.29$), and strongly reshapes how much the robot wants to do it (EFE effects $d > 0.78$).  Under active inference, this gradient maps onto the separation between the $\B$-matrix (which determines policy structure), the normalized transition weights (which determine VFE), and the $\CC$-matrix (which determines policy evaluation via EFE).  The composition pipeline implements this principle computationally, showing that free energy minimization provides a unified framework for understanding how material structure parameterizes social robot behavior.
 
 The environment shapes cognition.  The norm was in the stanchions.
 
