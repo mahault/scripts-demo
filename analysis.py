@@ -3,17 +3,19 @@
 Loads experiment CSV data and generates 14 PDF figures with proper
 active inference axis labels and statistical annotations.
 
-Key insight: structural metrics (n_primitives, VFE, backbone) are
-context-independent -- same fragments produce same structure regardless
-of context.  Evaluative metrics (EFE, fragment weights, primitive weights)
-are context-dependent -- the C-matrix reshapes policy evaluation.
+Key insight: context-dependent D-matrix gating causes the environment to
+shape behaviour at every level -- structural (which primitives are composed),
+transitional (VFE of transitions), and evaluative (EFE of the policy).
+Different contexts activate different fragments, producing genuinely
+different primitive sets and sequences.
 
 Figures:
-  Exp1 (5): cue-primitive mapping, EFE by cues, EFE landscape,
-            EFE by cue config, EFE interaction
-  Exp2 (4): degradation (dual panel), weight concentration, EFE vs k,
-            mean primitive weight
-  Exp3 (3): behavioral divergence, sequence comparison, weight profiles
+  Exp1 (5): cue-primitive mapping per context, n_primitives by cues,
+            EFE landscape, EFE by cue config, interaction plot
+  Exp2 (4): degradation curves (both structural + evaluative),
+            weight concentration, EFE vs k, primitive weight budget
+  Exp3 (3): behavioral divergence (Jaccard + EFE), sequence comparison,
+            weight profiles
   Cross (2): context effect sizes, pipeline overview
 """
 
@@ -158,99 +160,122 @@ def cosine_distance(d1, d2):
 
 
 # ================================================================
-# Figure 1: Cue-Primitive Mapping (single panel, context-independent)
+# Figure 1: Cue-Primitive Mapping (3 panels, context-dependent)
 # ================================================================
 def fig_exp1_cue_primitive_heatmap(df: pd.DataFrame):
-    """Single-panel heatmap: which cues activate which primitives.
+    """3-panel heatmap: which cues activate which primitives per context.
 
-    This mapping is context-independent -- material cues determine
-    the B-matrix structure regardless of the C-matrix.
+    Context-dependent D-matrix gating means the same material cue
+    produces different primitives in different environments.
     """
     cue_cols = ["cue_stanchions", "cue_waiting_area", "cue_service_sign", "cue_social_density"]
     cue_labels = ["Stanchions\n(queue_position)", "Waiting area\n(wait_patiently)",
                   "Service sign\n(direct_approach)", "Social density\n(courtesy_space)"]
 
-    # Use reception data (context-independent, so any context works)
-    ctx_df = df[df["context"] == "reception"]
-
+    # Collect all primitives across ALL contexts
     all_prims = set()
-    for ps in ctx_df["primitive_set"]:
-        all_prims.update(ps.split(","))
+    for ps in df["primitive_set"]:
+        if isinstance(ps, str) and ps:
+            all_prims.update(ps.split(","))
     all_prims = sorted(all_prims)
 
-    matrix = np.zeros((len(cue_labels), len(all_prims)))
-    for ci, cue_col in enumerate(cue_cols):
-        cue_on = ctx_df[ctx_df[cue_col] == 1]
-        cue_off = ctx_df[ctx_df[cue_col] == 0]
-        for pi, prim in enumerate(all_prims):
-            rate_on = cue_on["primitive_set"].apply(lambda x, p=prim: p in x.split(",")).mean() if len(cue_on) > 0 else 0
-            rate_off = cue_off["primitive_set"].apply(lambda x, p=prim: p in x.split(",")).mean() if len(cue_off) > 0 else 0
-            matrix[ci, pi] = rate_on - rate_off
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4), sharey=True)
 
-    fig, ax = plt.subplots(figsize=(10, 4))
-    im = ax.imshow(matrix, aspect="auto", cmap="RdBu_r", vmin=-0.6, vmax=0.6)
+    for ax_idx, context in enumerate(CONTEXT_ORDER):
+        ctx_df = df[df["context"] == context]
+        matrix = np.zeros((len(cue_labels), len(all_prims)))
 
-    ax.set_xticks(range(len(all_prims)))
-    ax.set_xticklabels(all_prims, rotation=45, ha="right", fontsize=8)
-    ax.set_yticks(range(len(cue_labels)))
-    ax.set_yticklabels(cue_labels, fontsize=9)
+        for ci, cue_col in enumerate(cue_cols):
+            cue_on = ctx_df[ctx_df[cue_col] == 1]
+            cue_off = ctx_df[ctx_df[cue_col] == 0]
+            for pi, prim in enumerate(all_prims):
+                def has_prim(x, p=prim):
+                    return p in x.split(",") if isinstance(x, str) and x else False
+                rate_on = cue_on["primitive_set"].apply(has_prim).mean() if len(cue_on) > 0 else 0
+                rate_off = cue_off["primitive_set"].apply(has_prim).mean() if len(cue_off) > 0 else 0
+                matrix[ci, pi] = rate_on - rate_off
 
-    for ci in range(len(cue_labels)):
-        for pi in range(len(all_prims)):
-            val = matrix[ci, pi]
-            if abs(val) > 0.01:
-                color = "white" if abs(val) > 0.35 else "black"
-                ax.text(pi, ci, f"{val:.2f}", ha="center", va="center",
-                        fontsize=7, color=color, fontweight="bold")
+        ax = axes[ax_idx]
+        im = ax.imshow(matrix, aspect="auto", cmap="RdBu_r", vmin=-0.6, vmax=0.6)
+        ax.set_xticks(range(len(all_prims)))
+        ax.set_xticklabels(all_prims, rotation=45, ha="right", fontsize=7)
+        if ax_idx == 0:
+            ax.set_yticks(range(len(cue_labels)))
+            ax.set_yticklabels(cue_labels, fontsize=8)
+        ax.set_title(f"{context.capitalize()}", fontsize=11,
+                     color=CONTEXT_COLORS[context], fontweight="bold")
 
-    cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
-    cbar.set_label("Differential inclusion rate\n(cue present - cue absent)", fontsize=9)
+        for ci in range(len(cue_labels)):
+            for pi in range(len(all_prims)):
+                val = matrix[ci, pi]
+                if abs(val) > 0.01:
+                    color = "white" if abs(val) > 0.35 else "black"
+                    ax.text(pi, ci, f"{val:.2f}", ha="center", va="center",
+                            fontsize=6, color=color, fontweight="bold")
 
-    ax.set_title("Material Cue $\\rightarrow$ Primitive Mapping\n"
-                 "(Context-independent: A-matrix structure determines B-matrix content)",
+    cbar = fig.colorbar(im, ax=axes.tolist(), shrink=0.8, pad=0.02)
+    cbar.set_label("Differential inclusion rate\n(cue present $-$ cue absent)", fontsize=9)
+
+    fig.suptitle("Material Cue $\\rightarrow$ Primitive Mapping by Context\n"
+                 "(D-matrix gating: same cues, different active fragments per environment)",
                  fontsize=11)
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0, 0.92, 0.88])
     fig.savefig(os.path.join(FIG_DIR, "fig_exp1_cue_primitive_heatmap.pdf"))
     plt.close(fig)
     print("  [1/14] fig_exp1_cue_primitive_heatmap.pdf")
 
 
 # ================================================================
-# Figure 2: EFE by Cues (Exp1)
+# Figure 2: Policy Length + EFE by Cues (Exp1)
 # ================================================================
 def fig_exp1_n_primitives_by_cues(df: pd.DataFrame):
-    """Grouped bar: n_cues x context -> total_EFE.
+    """Dual-panel: left = n_primitives by context (now varies!),
+    right = total_EFE by context.
 
-    Shows how context preference structure reshapes policy evaluation
-    even when policy structure is identical.
+    Shows that D-matrix gating causes both structural and evaluative
+    divergence across contexts.
     """
     df = df.copy()
     df["n_cues"] = df["cue_stanchions"] + df["cue_waiting_area"] + df["cue_service_sign"] + df["cue_social_density"]
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     width = 0.25
     x = np.arange(5)  # 0..4 cues
 
     for i, context in enumerate(CONTEXT_ORDER):
         ctx = df[df["context"] == context]
-        means = []
-        stds = []
-        for nc in range(5):
-            vals = ctx[ctx["n_cues"] == nc]["total_EFE"]
-            means.append(vals.mean() if len(vals) > 0 else 0)
-            stds.append(vals.std() if len(vals) > 1 else 0)
-        ax.bar(x + i * width, means, width, yerr=stds,
-               label=context.capitalize(), color=CONTEXT_COLORS[context],
-               alpha=0.85, capsize=3)
+        # Left: n_primitives
+        means_p = [ctx[ctx["n_cues"] == nc]["n_primitives"].mean() if len(ctx[ctx["n_cues"] == nc]) > 0 else 0 for nc in range(5)]
+        stds_p = [ctx[ctx["n_cues"] == nc]["n_primitives"].std() if len(ctx[ctx["n_cues"] == nc]) > 1 else 0 for nc in range(5)]
+        ax1.bar(x + i * width, means_p, width, yerr=stds_p,
+                label=context.capitalize(), color=CONTEXT_COLORS[context],
+                alpha=0.85, capsize=3)
+        # Right: total_EFE
+        means_e = [ctx[ctx["n_cues"] == nc]["total_EFE"].mean() if len(ctx[ctx["n_cues"] == nc]) > 0 else 0 for nc in range(5)]
+        stds_e = [ctx[ctx["n_cues"] == nc]["total_EFE"].std() if len(ctx[ctx["n_cues"] == nc]) > 1 else 0 for nc in range(5)]
+        ax2.bar(x + i * width, means_e, width, yerr=stds_e,
+                label=context.capitalize(), color=CONTEXT_COLORS[context],
+                alpha=0.85, capsize=3)
 
-    ax.set_xlabel("Number of material cues present")
-    ax.set_ylabel("Total expected free energy $\\mathcal{G}(\\pi)$")
-    ax.set_title("C-matrix Reshapes Policy Evaluation\n"
-                 "(Same policy structure, different free energy profiles)")
-    ax.set_xticks(x + width)
-    ax.set_xticklabels(["0", "1", "2", "3", "4"])
-    ax.legend()
-    ax.grid(axis="y", alpha=0.3)
+    ax1.set_xlabel("Number of material cues present")
+    ax1.set_ylabel("Composed policy length $|\\pi|$")
+    ax1.set_title("D-matrix Gating Shapes Policy Structure\n"
+                  "(Context determines which fragments are active)")
+    ax1.set_xticks(x + width)
+    ax1.set_xticklabels(["0", "1", "2", "3", "4"])
+    ax1.legend(fontsize=8)
+    ax1.grid(axis="y", alpha=0.3)
+
+    ax2.set_xlabel("Number of material cues present")
+    ax2.set_ylabel("Total expected free energy $\\mathcal{G}(\\pi)$")
+    ax2.set_title("C-matrix Reshapes Policy Evaluation\n"
+                  "(Different preferences for same material cues)")
+    ax2.set_xticks(x + width)
+    ax2.set_xticklabels(["0", "1", "2", "3", "4"])
+    ax2.legend(fontsize=8)
+    ax2.grid(axis="y", alpha=0.3)
+
+    fig.suptitle("Structural and Evaluative Divergence by Material Cue Count", fontsize=12, y=1.02)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp1_n_primitives_by_cues.pdf"))
     plt.close(fig)
@@ -412,39 +437,48 @@ def fig_exp1_anova_interaction(df: pd.DataFrame):
 # Figure 6: Degradation Curves -- dual panel (Exp2)
 # ================================================================
 def fig_exp2_degradation_curves(df: pd.DataFrame):
-    """Dual-panel: left = policy length (context-independent),
-    right = total EFE per context (context-dependent).
+    """Dual-panel: left = policy length per context (now divergent),
+    right = total EFE per context.
 
-    Shows structural invariance vs. evaluative divergence.
+    D-matrix gating means different contexts activate different
+    subsets of the requested fragments, producing different policy
+    lengths AND different EFE profiles.
     """
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
 
-    # Left panel: n_primitives (context-independent -- single line)
-    ctx0 = df[df["context"] == CONTEXT_ORDER[0]]
-    grouped = ctx0.groupby("n_fragments")["n_primitives"]
-    means = grouped.mean()
-    mins = grouped.min()
-    maxs = grouped.max()
+    # Left panel: n_primitives per context (now context-dependent!)
+    for context in CONTEXT_ORDER:
+        ctx = df[df["context"] == context]
+        grouped = ctx.groupby("n_fragments")["n_primitives"]
+        means = grouped.mean()
+        mins = grouped.min()
+        maxs = grouped.max()
 
-    ax1.plot(means.index, means.values, marker="o", color="#555555", linewidth=2,
-             label="All contexts (identical)")
-    ax1.fill_between(means.index, mins.values, maxs.values, alpha=0.15, color="#555555")
+        color = CONTEXT_COLORS[context]
+        ax1.plot(means.index, means.values, marker="o",
+                 label=context.capitalize(), color=color, linewidth=2)
+        ax1.fill_between(means.index, mins.values, maxs.values,
+                         alpha=0.12, color=color)
 
-    ax1.set_xlabel("Number of available fragments $k$")
+    ax1.set_xlabel("Number of requested fragments $k$")
     ax1.set_ylabel("Composed policy length $|\\pi|$")
-    ax1.set_title("Policy Structure (Context-Invariant)\n"
-                  "Same fragments $\\rightarrow$ same length")
+    ax1.set_title("Policy Structure (Context-Dependent)\n"
+                  "D-matrix gating filters fragments by context")
     ax1.legend(fontsize=8)
     ax1.grid(alpha=0.3)
     ax1.set_xticks(range(1, 7))
 
-    # Spearman annotation
-    rho = spearman_rank(ctx0["n_fragments"].values, ctx0["n_primitives"].values)
-    ax1.text(0.05, 0.92, f"Spearman $\\rho$ = {rho:.2f}",
-             transform=ax1.transAxes, fontsize=9,
+    # Spearman annotation for each context
+    rho_texts = []
+    for context in CONTEXT_ORDER:
+        ctx = df[df["context"] == context]
+        rho = spearman_rank(ctx["n_fragments"].values, ctx["n_primitives"].values)
+        rho_texts.append(f"{context[:3]}: $\\rho$={rho:.2f}")
+    ax1.text(0.05, 0.92, "  ".join(rho_texts),
+             transform=ax1.transAxes, fontsize=8,
              bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5))
 
-    # Right panel: total_EFE (context-dependent)
+    # Right panel: total_EFE per context
     for context in CONTEXT_ORDER:
         ctx = df[df["context"] == context]
         grouped = ctx.groupby("n_fragments")["total_EFE"]
@@ -458,15 +492,15 @@ def fig_exp2_degradation_curves(df: pd.DataFrame):
         ax2.fill_between(means.index, mins.values, maxs.values,
                          alpha=0.12, color=color)
 
-    ax2.set_xlabel("Number of available fragments $k$")
+    ax2.set_xlabel("Number of requested fragments $k$")
     ax2.set_ylabel("Total expected free energy $\\mathcal{G}(\\pi)$")
     ax2.set_title("Policy Evaluation (Context-Dependent)\n"
-                  "Same structure $\\rightarrow$ different EFE")
+                  "C-matrix preferences reshape free energy landscape")
     ax2.legend(fontsize=8)
     ax2.grid(alpha=0.3)
     ax2.set_xticks(range(1, 7))
 
-    fig.suptitle("Structural Invariance vs. Evaluative Divergence Under Model Sparsity",
+    fig.suptitle("Graceful Degradation Under Model Sparsity: Structure and Evaluation",
                  fontsize=12, y=1.02)
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp2_degradation_curves.pdf"))
@@ -616,77 +650,109 @@ def fig_exp2_topology_density(df: pd.DataFrame):
 # Figure 10: Behavioral Divergence (Exp3)
 # ================================================================
 def fig_exp3_behavioral_divergence(df: pd.DataFrame):
-    """Redesigned: weight-based divergence and EFE comparison.
+    """Three-panel: Jaccard distance (primitives), cosine distance (weights), EFE.
 
-    Left: Weight profile distance matrix (cosine + KL).
-    Right: EFE comparison bar chart across contexts.
+    With D-matrix gating, contexts now produce genuinely different
+    primitive sets — Jaccard distances are non-zero.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
-    # Parse weight profiles
+    # Parse data
+    prim_sets = {}
     weight_profiles = {}
     efe_values = {}
+    n_prims_values = {}
     for _, row in df.iterrows():
         ctx = row["context"]
-        ws = json.loads(row["weighted_scores"])
+        ps = row["primitive_set"]
+        prim_sets[ctx] = set(ps.split(",")) if isinstance(ps, str) and ps else set()
+        ws = json.loads(row["weighted_scores"]) if isinstance(row["weighted_scores"], str) else {}
         weight_profiles[ctx] = ws
         efe_values[ctx] = row["total_EFE"]
+        n_prims_values[ctx] = row["n_primitives"]
 
-    # Left: Distance matrix (cosine distance of weight profiles)
     contexts = CONTEXT_ORDER
     n = len(contexts)
-    dist_matrix = np.zeros((n, n))
+
+    # Left: Jaccard distance matrix (primitive sets)
+    jacc_matrix = np.zeros((n, n))
     for i in range(n):
         for j in range(n):
-            dist_matrix[i, j] = cosine_distance(
-                weight_profiles.get(contexts[i], {}),
-                weight_profiles.get(contexts[j], {}))
+            jacc_matrix[i, j] = jaccard_distance(
+                prim_sets.get(contexts[i], set()),
+                prim_sets.get(contexts[j], set()))
 
     ax = axes[0]
-    im = ax.imshow(dist_matrix, cmap="Oranges", vmin=0, vmax=0.5)
+    im = ax.imshow(jacc_matrix, cmap="Oranges", vmin=0, vmax=1.0)
     ax.set_xticks(range(n))
     ax.set_xticklabels([c.capitalize() for c in contexts], fontsize=10)
     ax.set_yticks(range(n))
     ax.set_yticklabels([c.capitalize() for c in contexts], fontsize=10)
     for i in range(n):
         for j in range(n):
-            ax.text(j, i, f"{dist_matrix[i,j]:.3f}", ha="center", va="center",
+            ax.text(j, i, f"{jacc_matrix[i,j]:.3f}", ha="center", va="center",
                     fontsize=11, fontweight="bold")
-    ax.set_title("Weight Profile Distance\n(Cosine distance of $Q(f|c)$)")
-    cbar = fig.colorbar(im, ax=ax, shrink=0.7, pad=0.04)
-    cbar.set_label("Cosine distance")
+    ax.set_title("Primitive Set Divergence\n(Jaccard distance)")
+    fig.colorbar(im, ax=ax, shrink=0.7, pad=0.04)
 
-    # Right: EFE bar chart
+    # Middle: Cosine distance matrix (weight profiles)
+    cos_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            cos_matrix[i, j] = cosine_distance(
+                weight_profiles.get(contexts[i], {}),
+                weight_profiles.get(contexts[j], {}))
+
     ax = axes[1]
-    bars = ax.bar(range(n),
-                  [efe_values.get(c, 0) for c in contexts],
-                  color=[CONTEXT_COLORS[c] for c in contexts],
-                  alpha=0.85, edgecolor="gray", linewidth=0.5)
-
+    im = ax.imshow(cos_matrix, cmap="Purples", vmin=0, vmax=1.0)
     ax.set_xticks(range(n))
     ax.set_xticklabels([c.capitalize() for c in contexts], fontsize=10)
-    ax.set_ylabel("Total expected free energy $\\mathcal{G}(\\pi)$")
-    ax.set_title("EFE Under Identical Knowledge Base\n(Same A/B, different C-matrix)")
-    ax.grid(axis="y", alpha=0.3)
+    ax.set_yticks(range(n))
+    ax.set_yticklabels([c.capitalize() for c in contexts], fontsize=10)
+    for i in range(n):
+        for j in range(n):
+            ax.text(j, i, f"{cos_matrix[i,j]:.3f}", ha="center", va="center",
+                    fontsize=11, fontweight="bold")
+    ax.set_title("Weight Profile Distance\n(Cosine distance of $Q(f|c)$)")
+    fig.colorbar(im, ax=ax, shrink=0.7, pad=0.04)
 
-    # Annotate with values
-    for bar_obj, ctx in zip(bars, contexts):
+    # Right: n_primitives + EFE bar chart
+    ax = axes[2]
+    x_pos = np.arange(n)
+    bar_w = 0.35
+    bars1 = ax.bar(x_pos - bar_w/2,
+                   [n_prims_values.get(c, 0) for c in contexts],
+                   bar_w, label="Policy length $|\\pi|$",
+                   color=[CONTEXT_COLORS[c] for c in contexts],
+                   alpha=0.5, edgecolor="gray")
+    ax2 = ax.twinx()
+    bars2 = ax2.bar(x_pos + bar_w/2,
+                    [efe_values.get(c, 0) for c in contexts],
+                    bar_w, label="Total EFE",
+                    color=[CONTEXT_COLORS[c] for c in contexts],
+                    alpha=0.85, edgecolor="gray", hatch="//")
+
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels([c.capitalize() for c in contexts], fontsize=10)
+    ax.set_ylabel("Policy length $|\\pi|$")
+    ax2.set_ylabel("Total EFE $\\mathcal{G}(\\pi)$")
+    ax.set_title("Structural + Evaluative\nDivergence")
+
+    # Annotate bar values
+    for bar_obj, ctx in zip(bars1, contexts):
+        val = n_prims_values[ctx]
+        ax.text(bar_obj.get_x() + bar_obj.get_width()/2, bar_obj.get_height() + 0.1,
+                f"{val}", ha="center", va="bottom", fontsize=9)
+    for bar_obj, ctx in zip(bars2, contexts):
         val = efe_values[ctx]
-        ax.text(bar_obj.get_x() + bar_obj.get_width() / 2, bar_obj.get_height() + 0.3,
-                f"{val:.1f}", ha="center", va="bottom", fontsize=10, fontweight="bold")
+        ax2.text(bar_obj.get_x() + bar_obj.get_width()/2, bar_obj.get_height() + 0.2,
+                 f"{val:.1f}", ha="center", va="bottom", fontsize=8)
 
-    # KL annotation
-    kl_texts = []
-    for _, row in df.iterrows():
-        if row["D_KL_from_baseline"] > 0:
-            kl_texts.append(f"{row['context'].capitalize()}: "
-                           f"$D_{{KL}}$ = {row['D_KL_from_baseline']:.3f}")
-    if kl_texts:
-        ax.text(0.02, 0.95, "KL from reception:\n" + "\n".join(kl_texts),
-                transform=ax.transAxes, fontsize=8, va="top",
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.8))
+    lines1, labels1 = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(lines1 + lines2, labels1 + labels2, fontsize=7, loc="upper left")
 
-    fig.suptitle("Behavioral Divergence: Same Knowledge, Different Preferences",
+    fig.suptitle("Behavioral Divergence: Same Knowledge Base, Different Environments",
                  fontsize=12)
     fig.tight_layout(rect=[0, 0, 1, 0.92])
     fig.savefig(os.path.join(FIG_DIR, "fig_exp3_behavioral_divergence.pdf"))
@@ -726,12 +792,19 @@ def fig_exp3_sequence_comparison(df: pd.DataFrame):
                 return fname
         return "unknown"
 
-    fig, axes = plt.subplots(3, 1, figsize=(14, 7), sharex=True)
+    # Determine max sequence length for consistent x-axis
+    max_len = 0
+    rows_data = []
+    for _, row in df.iterrows():
+        seq_str = row["sequence"]
+        sequence = seq_str.split(" -> ") if isinstance(seq_str, str) and seq_str else []
+        max_len = max(max_len, len(sequence))
+        rows_data.append((row["context"], sequence))
 
-    for ax_idx, (_, row) in enumerate(df.iterrows()):
+    fig, axes = plt.subplots(3, 1, figsize=(14, 7))
+
+    for ax_idx, (context, sequence) in enumerate(rows_data):
         ax = axes[ax_idx]
-        context = row["context"]
-        sequence = row["sequence"].split(" -> ")
 
         for i, prim in enumerate(sequence):
             frag = prim_to_frag(prim)
@@ -742,13 +815,13 @@ def fig_exp3_sequence_comparison(df: pd.DataFrame):
             ax.add_patch(rect)
             ax.text(i, 0.0, prim.replace("-", "\n"), fontsize=6,
                     ha="center", va="center")
-            # Full fragment name below
             ax.text(i, -0.5, frag.replace("_", "\n"), fontsize=4.5,
                     ha="center", va="top", color="gray", style="italic")
 
-        ax.set_xlim(-0.6, len(sequence) - 0.4)
+        ax.set_xlim(-0.6, max(max_len - 0.4, 0.5))
         ax.set_ylim(-0.75, 0.5)
-        ax.set_ylabel(f"{context.capitalize()}", fontsize=11,
+        n_p = len(sequence)
+        ax.set_ylabel(f"{context.capitalize()}\n({n_p} prims)", fontsize=10,
                        color=CONTEXT_COLORS[context], fontweight="bold")
         ax.set_yticks([])
         ax.grid(axis="x", alpha=0.2)
@@ -787,7 +860,8 @@ def fig_exp3_weight_profiles(df: pd.DataFrame):
 
     for _, row in df.iterrows():
         context = row["context"]
-        ws = json.loads(row["weighted_scores"])
+        ws_str = row["weighted_scores"]
+        ws = json.loads(ws_str) if isinstance(ws_str, str) else {}
         values = [ws.get(f, 0.0) for f in frag_names]
         values += values[:1]
 
@@ -799,7 +873,7 @@ def fig_exp3_weight_profiles(df: pd.DataFrame):
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(frag_names, fontsize=8)
     ax.set_title("Posterior Fragment Weights $Q(f|c)$\n"
-                 "(Belief propagation on factor graph)",
+                 "(D-matrix gating: filtered fragments show zero weight)",
                  fontsize=12, pad=20)
     ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
     fig.tight_layout()
@@ -855,8 +929,8 @@ def fig_context_effect_sizes(df_all: pd.DataFrame):
     ax.set_yticks(y_ticks)
     ax.set_yticklabels(y_labels, fontsize=7)
     ax.set_xlabel("Cohen's $d$ effect size")
-    ax.set_title("Context Effect Sizes (C-matrix Impact)\n"
-                 "EFE shows large effects; structural metrics show near-zero effects")
+    ax.set_title("Context Effect Sizes (D-matrix Gating + C-matrix Impact)\n"
+                 "Environment shapes both structure and evaluation")
     ax.axvline(0, color="black", linewidth=0.5)
     ax.axvline(0.2, color="gray", linewidth=0.5, linestyle="--", alpha=0.5)
     ax.axvline(-0.2, color="gray", linewidth=0.5, linestyle="--", alpha=0.5)
@@ -983,19 +1057,22 @@ def print_statistics(df1, df2, df3, df_all):
     print("Statistical Summary")
     print("=" * 60)
 
-    # Exp1: Chi-square for each cue
-    print("\n--- Exp1: Cue-Primitive Independence (Chi-square) ---")
+    # Exp1: Chi-square for each cue (now per context)
+    print("\n--- Exp1: Cue-Primitive Independence (Chi-square, per context) ---")
     cue_cols = ["cue_stanchions", "cue_waiting_area", "cue_service_sign", "cue_social_density"]
     cue_labels = ["Stanchions", "Waiting area", "Service sign", "Social density"]
-    for cue_col, cue_label in zip(cue_cols, cue_labels):
-        median_prims = df1["n_primitives"].median()
-        observed = np.zeros((2, 2))
-        for _, row in df1.iterrows():
-            ci = row[cue_col]
-            pi = 1 if row["n_primitives"] > median_prims else 0
-            observed[ci, pi] += 1
-        chi2, p = chi_square_test(observed)
-        print(f"  {cue_label}: chi2={chi2:.2f}, p~{p:.4f}")
+    for context in CONTEXT_ORDER:
+        ctx_df = df1[df1["context"] == context]
+        print(f"  {context}:")
+        for cue_col, cue_label in zip(cue_cols, cue_labels):
+            median_prims = ctx_df["n_primitives"].median()
+            observed = np.zeros((2, 2))
+            for _, row in ctx_df.iterrows():
+                ci = int(row[cue_col])
+                pi = 1 if row["n_primitives"] > median_prims else 0
+                observed[ci, pi] += 1
+            chi2, p = chi_square_test(observed)
+            print(f"    {cue_label}: chi2={chi2:.2f}, p~{p:.4f}")
 
     # Exp1: Spearman on n_cues vs total_EFE
     print("\n--- Exp1: Context x n_cues (EFE correlation) ---")
@@ -1037,13 +1114,26 @@ def print_statistics(df1, df2, df3, df_all):
         d = cohens_d(g1, g2)
         print(f"  {c1} vs {c2}: d = {d:.3f}")
 
-    # Cross-experiment: Cohen's d for structural metrics (expected ~0)
+    # Cross-experiment: Cohen's d for structural metrics (now context-dependent!)
     print("\n--- Cross-Experiment: Cohen's d (n_primitives, structural) ---")
     for c1, c2 in combinations(CONTEXT_ORDER, 2):
         g1 = df_all[df_all["context"] == c1]["n_primitives"].values
         g2 = df_all[df_all["context"] == c2]["n_primitives"].values
         d = cohens_d(g1, g2)
         print(f"  {c1} vs {c2}: d = {d:.3f}")
+
+    # Exp3: Jaccard distance of primitive sets
+    print("\n--- Exp3: Primitive Set Divergence (Jaccard) ---")
+    prim_sets = {}
+    for _, row in df3.iterrows():
+        ps = row["primitive_set"]
+        prim_sets[row["context"]] = set(ps.split(",")) if isinstance(ps, str) and ps else set()
+    for c1, c2 in combinations(CONTEXT_ORDER, 2):
+        jd = jaccard_distance(prim_sets.get(c1, set()), prim_sets.get(c2, set()))
+        print(f"  {c1} vs {c2}: Jaccard distance = {jd:.4f}")
+        s1, s2 = prim_sets.get(c1, set()), prim_sets.get(c2, set())
+        print(f"    {c1} only: {s1 - s2}")
+        print(f"    {c2} only: {s2 - s1}")
 
 
 # ================================================================

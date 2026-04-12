@@ -45,6 +45,13 @@ from architecture_core.cognition.scripts.script_repertoire import ScriptRepertoi
 # ================================================================
 EPSILON = 1e-6
 
+# Context-dependent fragment gating threshold.
+# In active inference terms, this is the minimum D-matrix prior for a
+# generative sub-model (fragment) to be activated by the context.  Below
+# this threshold the environment suppresses the fragment — modelling how
+# material structure gates script activation (Guénin-Carlut & Albarracin 2023).
+CONTEXT_GATE_THRESHOLD = 0.4
+
 CONTEXTS = ["reception", "corridor", "hospital"]
 
 ALL_FRAGMENT_NAMES = [
@@ -312,8 +319,10 @@ class ExperimentResult:
     experiment: str
     condition_id: str
     context: str
-    fragment_names: str  # comma-separated
-    n_fragments: int
+    fragment_names: str  # comma-separated (requested fragments)
+    n_fragments: int  # requested fragment count
+    active_fragments: str  # comma-separated (context-gated fragments)
+    n_active_fragments: int  # fragments that passed D-matrix gating
     # Cue flags (Exp1)
     cue_stanchions: int
     cue_waiting_area: int
@@ -350,13 +359,60 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
     """Run the composition pipeline for one experimental condition.
 
     Follows the pattern from demo_variations_anim.py:run_pipeline().
+    Applies context-dependent fragment gating: only fragments whose
+    D-matrix affinity for the current context meets the threshold are
+    activated.  This models how material environments gate script
+    activation — a corridor suppresses queue_position (affinity 0.3)
+    even when the agent "knows" how to queue.
+
     Returns all metrics needed for analysis.
     """
     all_frags = _make_all_fragments()
     lib = PrimitiveLibrary()
     _register_reception_primitives(lib)
 
-    fragments = [all_frags[name] for name in cond.fragment_names]
+    # Requested fragments (from condition)
+    requested = [all_frags[name] for name in cond.fragment_names]
+
+    # Context-dependent D-matrix gating: suppress fragments whose
+    # affinity for the current context falls below threshold
+    fragments = [
+        f for f in requested
+        if f.situation_affinity.get(cond.context, 0.0) >= CONTEXT_GATE_THRESHOLD
+    ]
+    active_frag_names = [f.name for f in fragments]
+
+    # Handle empty fragment set — no viable behaviour for this context
+    if not fragments:
+        return ExperimentResult(
+            experiment=cond.experiment,
+            condition_id=cond.condition_id,
+            context=cond.context,
+            fragment_names=",".join(cond.fragment_names),
+            n_fragments=len(cond.fragment_names),
+            active_fragments="",
+            n_active_fragments=0,
+            cue_stanchions=cond.cue_stanchions,
+            cue_waiting_area=cond.cue_waiting_area,
+            cue_service_sign=cond.cue_service_sign,
+            cue_social_density=cond.cue_social_density,
+            n_primitives=0,
+            primitive_set="",
+            sequence="",
+            sequence_length=0,
+            backbone_length=0,
+            total_VFE=0.0,
+            mean_VFE=0.0,
+            max_VFE=0.0,
+            total_EFE=0.0,
+            n_obligatory=0,
+            n_advancing=0,
+            n_returning=0,
+            topology_density=0.0,
+            weighted_scores="{}",
+            primitive_weights="{}",
+            D_KL_from_baseline=0.0,
+        )
 
     cfg = RepertoireConfig()
     rep = ScriptRepertoire(lib, cfg, initial_patterns=fragments)
@@ -454,6 +510,8 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
         context=cond.context,
         fragment_names=",".join(cond.fragment_names),
         n_fragments=len(cond.fragment_names),
+        active_fragments=",".join(active_frag_names),
+        n_active_fragments=len(active_frag_names),
         cue_stanchions=cond.cue_stanchions,
         cue_waiting_area=cond.cue_waiting_area,
         cue_service_sign=cond.cue_service_sign,
@@ -625,6 +683,7 @@ def compute_exp3_kl_divergences(results: List[ExperimentResult]) -> None:
 # ================================================================
 CSV_COLUMNS = [
     "experiment", "condition_id", "context", "fragment_names", "n_fragments",
+    "active_fragments", "n_active_fragments",
     "cue_stanchions", "cue_waiting_area", "cue_service_sign", "cue_social_density",
     "n_primitives", "primitive_set", "sequence", "sequence_length", "backbone_length",
     "total_VFE", "mean_VFE", "max_VFE", "total_EFE",
@@ -674,8 +733,8 @@ def main():
         result = run_single_condition(cond)
         exp1_results.append(result)
         print(f"  [{i+1:2d}/48] {cond.condition_id}: "
+              f"{result.n_active_fragments}/{result.n_fragments} active, "
               f"{result.n_primitives} primitives, "
-              f"VFE={result.total_VFE:.3f}, "
               f"EFE={result.total_EFE:.3f}")
     write_csv(exp1_results, os.path.join(out_dir, "exp1_material_cues.csv"))
     all_results.extend(exp1_results)
@@ -692,8 +751,9 @@ def main():
         exp2_results.append(result)
         if (i + 1) % 20 == 0 or i == 0:
             print(f"  [{i+1:3d}/189] {cond.condition_id}: "
-                  f"{result.n_primitives} primitives, "
-                  f"VFE={result.total_VFE:.3f}")
+                  f"{result.n_active_fragments}/{result.n_fragments} active, "
+                  f"{result.n_primitives} prims, "
+                  f"EFE={result.total_EFE:.3f}")
     write_csv(exp2_results, os.path.join(out_dir, "exp2_fragment_scaling.csv"))
     all_results.extend(exp2_results)
     print(f"  -> Wrote {len(exp2_results)} rows to exp2_fragment_scaling.csv")
@@ -708,9 +768,9 @@ def main():
         result = run_single_condition(cond)
         exp3_results.append(result)
         print(f"  {cond.condition_id}: "
-              f"{result.n_primitives} primitives, "
-              f"seq=[{result.sequence}], "
-              f"VFE={result.total_VFE:.3f}")
+              f"{result.n_active_fragments}/{result.n_fragments} active, "
+              f"{result.n_primitives} prims, "
+              f"seq=[{result.sequence}]")
 
     # Compute KL divergences for Exp3
     compute_exp3_kl_divergences(exp3_results)
