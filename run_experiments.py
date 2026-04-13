@@ -28,7 +28,9 @@ import os
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from architecture_core.core.types import AffectState, SkillRequest
+from architecture_core.core.types import AffectState, PerceptBundle, SkillRequest
+from architecture_core.cognition.scripts.script_types import SituationType
+from architecture_core.cognition.scripts.weak_recognizer import WeakScriptRecognizer, SituationBelief
 from architecture_core.cognition.scripts.repertoire_types import (
     RepertoireConfig,
     ScriptPattern,
@@ -94,6 +96,114 @@ CUE_FRAGMENT_MAP = {
 
 # Base fragments always present in Exp1
 EXP1_BASE_FRAGMENTS = ["observe_scene", "approach_service"]
+
+# Situation types for WeakScriptRecognizer (A-matrix)
+# Feature weights tuned to the 10 features extracted by _extract_features():
+#   agent_count, min_distance, inverse_min_distance, mean_velocity,
+#   max_arousal, max_engagement, has_hazard,
+#   cue_queue_here, cue_staff_only, cue_quiet_zone
+SITUATION_TYPES = [
+    SituationType(name="reception", feature_weights={
+        "agent_count": 0.5,
+        "inverse_min_distance": 0.8,
+        "max_engagement": 1.5,
+        "cue_queue_here": 3.0,
+    }),
+    SituationType(name="corridor", feature_weights={
+        "mean_velocity": 2.0,
+        "min_distance": 0.5,
+        "agent_count": -0.3,
+    }),
+    SituationType(name="hospital", feature_weights={
+        "cue_quiet_zone": 3.0,
+        "max_arousal": -1.0,
+        "agent_count": 0.8,
+        "inverse_min_distance": 0.5,
+        "max_engagement": -0.5,
+    }),
+]
+
+
+def _make_base_percept(context: str) -> PerceptBundle:
+    """Build a base PerceptBundle encoding the environmental character of a context."""
+    if context == "reception":
+        return PerceptBundle(
+            t=0.0,
+            world={
+                "agents": [{"pose": (2, 1)}, {"pose": (3, 2)}, {"pose": (4, 1)}],
+                "robot_pose": (0, 0, 0, 0),
+                "hazards": [],
+                "deontic_cues": [{"type": "queue_here", "active": True}],
+            },
+            social={
+                "affect": {"readings": [{"arousal": 0.3}]},
+                "engagement": {"readings": [{"score": 0.7}]},
+            },
+            attention={
+                "saliency": {"targets": [{"velocity": 0.1}]},
+            },
+        )
+    elif context == "corridor":
+        return PerceptBundle(
+            t=0.0,
+            world={
+                "agents": [{"pose": (5, 0)}],
+                "robot_pose": (0, 0, 0, 0),
+                "hazards": [],
+                "deontic_cues": [],
+            },
+            social={
+                "affect": {"readings": [{"arousal": 0.1}]},
+                "engagement": {"readings": [{"score": 0.2}]},
+            },
+            attention={
+                "saliency": {"targets": [{"velocity": 0.8}]},
+            },
+        )
+    else:  # hospital
+        return PerceptBundle(
+            t=0.0,
+            world={
+                "agents": [{"pose": (2, 1)}, {"pose": (3, 0)}, {"pose": (1, 2)}, {"pose": (4, 1)}],
+                "robot_pose": (0, 0, 0, 0),
+                "hazards": [],
+                "deontic_cues": [{"type": "quiet_zone", "active": True}],
+            },
+            social={
+                "affect": {"readings": [{"arousal": 0.1}]},
+                "engagement": {"readings": [{"score": 0.3}]},
+            },
+            attention={
+                "saliency": {"targets": [{"velocity": 0.05}]},
+            },
+        )
+
+
+def _apply_material_cues(pb: PerceptBundle, cue_flags: dict) -> PerceptBundle:
+    """Modify PerceptBundle based on material cues present."""
+    if cue_flags.get("stanchions"):
+        cues = pb.world.get("deontic_cues", [])
+        if not any(c.get("type") == "queue_here" for c in cues):
+            cues.append({"type": "queue_here", "active": True})
+        pb.world["deontic_cues"] = cues
+
+    if cue_flags.get("waiting_area"):
+        agents = pb.world.get("agents", [])
+        agents.extend([{"pose": (1.5, 0.5)}, {"pose": (2.5, 0.5)}])
+        pb.world["agents"] = agents
+
+    if cue_flags.get("service_sign"):
+        eng = pb.social.get("engagement", {})
+        readings = eng.get("readings", [])
+        readings.append({"score": 0.8})
+        pb.social["engagement"] = {"readings": readings}
+
+    if cue_flags.get("social_density"):
+        agents = pb.world.get("agents", [])
+        agents.extend([{"pose": (1, 1)}, {"pose": (2, 2)}, {"pose": (3, 1)}])
+        pb.world["agents"] = agents
+
+    return pb
 
 
 # ================================================================
@@ -197,7 +307,7 @@ def _make_all_fragments() -> Dict[str, ScriptPattern]:
         "approach_service": _make_fragment(
             "approach_service",
             {"approach-counter", "gaze-at-agent"},
-            {"reception": 0.9, "open_area": 0.4, "hospital": 0.80},
+            {"reception": 0.9, "corridor": 0.4, "hospital": 0.80},
         ),
         "courtesy_space": _make_fragment(
             "courtesy_space",
@@ -345,6 +455,14 @@ class ExperimentResult:
     n_returning: int
     # Topology metrics
     topology_density: float
+    # Perception pipeline (A-matrix)
+    inferred_context: str  # belief.most_likely
+    belief_confidence: float  # belief.confidence
+    belief_entropy: float  # belief.entropy
+    belief_reception: float  # belief.distribution["reception"]
+    belief_corridor: float  # belief.distribution["corridor"]
+    belief_hospital: float  # belief.distribution["hospital"]
+    effective_affinities: str  # JSON of marginalized affinities
     # Weights
     weighted_scores: str  # JSON
     primitive_weights: str  # JSON
@@ -374,12 +492,29 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
     # Requested fragments (from condition)
     requested = [all_frags[name] for name in cond.fragment_names]
 
-    # Context-dependent D-matrix gating: suppress fragments whose
-    # affinity for the current context falls below threshold
-    fragments = [
-        f for f in requested
-        if f.situation_affinity.get(cond.context, 0.0) >= CONTEXT_GATE_THRESHOLD
-    ]
+    # --- Perception-driven situation recognition (A-matrix) ---
+    recognizer = WeakScriptRecognizer(SITUATION_TYPES, temperature=1.0)
+    pb = _make_base_percept(cond.context)
+    pb = _apply_material_cues(pb, {
+        "stanchions": cond.cue_stanchions,
+        "waiting_area": cond.cue_waiting_area,
+        "service_sign": cond.cue_service_sign,
+        "social_density": cond.cue_social_density,
+    })
+    belief = recognizer.recognize(pb)
+    inferred_context = belief.most_likely
+
+    # Marginalize affinity over posterior: effective_aff(f) = sum_s P(s|o) * aff(f,s)
+    fragments = []
+    effective_affinities = {}
+    for f in requested:
+        eff_aff = sum(
+            belief.distribution.get(s, 0.0) * f.situation_affinity.get(s, 0.0)
+            for s in belief.distribution
+        )
+        effective_affinities[f.name] = round(eff_aff, 6)
+        if eff_aff >= CONTEXT_GATE_THRESHOLD:
+            fragments.append(f)
     active_frag_names = [f.name for f in fragments]
 
     # Handle empty fragment set — no viable behaviour for this context
@@ -409,6 +544,13 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
             n_advancing=0,
             n_returning=0,
             topology_density=0.0,
+            inferred_context=inferred_context,
+            belief_confidence=round(belief.confidence, 6),
+            belief_entropy=round(belief.entropy, 6),
+            belief_reception=round(belief.distribution.get("reception", 0.0), 6),
+            belief_corridor=round(belief.distribution.get("corridor", 0.0), 6),
+            belief_hospital=round(belief.distribution.get("hospital", 0.0), 6),
+            effective_affinities=json.dumps(effective_affinities),
             weighted_scores="{}",
             primitive_weights="{}",
             D_KL_from_baseline=0.0,
@@ -418,10 +560,11 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
     rep = ScriptRepertoire(lib, cfg, initial_patterns=fragments)
     rep.enable_compositional_mode()
 
-    # D-matrix scoring: w_f(c) = affinity(f, c) * precision(f)
+    # D-matrix scoring: w_f(c) = affinity(f, inferred_context) * precision(f)
+    # Uses inferred_context from perceptual recognition instead of hardcoded context
     query_scores = {}
     for name, pat in rep.patterns.items():
-        aff = pat.situation_affinity.get(cond.context, 0.0)
+        aff = pat.situation_affinity.get(inferred_context, 0.0)
         query_scores[name] = aff * pat.precision
 
     # Belief propagation on factor graph (graph diffusion)
@@ -429,12 +572,12 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
 
     # B-matrix construction + backbone extraction
     composer = ScriptComposer(lib, cfg)
-    composite = composer.compose_from_patterns(weighted, cond.context)
+    composite = composer.compose_from_patterns(weighted, inferred_context)
     if composite is None:
         composite = ScriptPattern(name="empty_composite")
 
     # Extract topology and sequence
-    topo = composite.context_topology.get(cond.context, {})
+    topo = composite.context_topology.get(inferred_context, {})
     if not topo:
         topo = next(iter(composite.context_topology.values()), {})
 
@@ -453,13 +596,13 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
             for i in range(len(sequence) - 1)
         )
 
-    # Context affinities for EFE computation
+    # Context affinities for EFE computation (using inferred context)
     context_affinities = {}
     for sit in _SITUATION_PHASE:
         # Approximate: situations used by high-affinity fragments get high preference
         best_aff = 0.1
         for frag in fragments:
-            aff = frag.situation_affinity.get(cond.context, 0.0)
+            aff = frag.situation_affinity.get(inferred_context, 0.0)
             for p_name in frag.primitive_cluster:
                 prim = lib.get(p_name)
                 if prim and prim.postcondition_situation == sit:
@@ -529,6 +672,13 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
         n_advancing=n_advancing,
         n_returning=n_returning,
         topology_density=round(topology_density, 6),
+        inferred_context=inferred_context,
+        belief_confidence=round(belief.confidence, 6),
+        belief_entropy=round(belief.entropy, 6),
+        belief_reception=round(belief.distribution.get("reception", 0.0), 6),
+        belief_corridor=round(belief.distribution.get("corridor", 0.0), 6),
+        belief_hospital=round(belief.distribution.get("hospital", 0.0), 6),
+        effective_affinities=json.dumps(effective_affinities),
         weighted_scores=json.dumps(weighted_scores_dict),
         primitive_weights=json.dumps({k: round(v, 6) for k, v in primitive_weights_dict.items()}),
         D_KL_from_baseline=0.0,  # Computed post-hoc for Exp3
@@ -688,7 +838,11 @@ CSV_COLUMNS = [
     "n_primitives", "primitive_set", "sequence", "sequence_length", "backbone_length",
     "total_VFE", "mean_VFE", "max_VFE", "total_EFE",
     "n_obligatory", "n_advancing", "n_returning",
-    "topology_density", "weighted_scores", "primitive_weights",
+    "topology_density",
+    "inferred_context", "belief_confidence", "belief_entropy",
+    "belief_reception", "belief_corridor", "belief_hospital",
+    "effective_affinities",
+    "weighted_scores", "primitive_weights",
     "D_KL_from_baseline",
 ]
 
@@ -735,7 +889,8 @@ def main():
         print(f"  [{i+1:2d}/48] {cond.condition_id}: "
               f"{result.n_active_fragments}/{result.n_fragments} active, "
               f"{result.n_primitives} primitives, "
-              f"EFE={result.total_EFE:.3f}")
+              f"EFE={result.total_EFE:.3f}, "
+              f"inferred={result.inferred_context} ({result.belief_confidence:.2f})")
     write_csv(exp1_results, os.path.join(out_dir, "exp1_material_cues.csv"))
     all_results.extend(exp1_results)
     print(f"  -> Wrote {len(exp1_results)} rows to exp1_material_cues.csv")
@@ -802,6 +957,11 @@ def main():
     r2 = run_single_condition(test_cond)
     deterministic = (r1.sequence == r2.sequence and r1.total_VFE == r2.total_VFE)
     print(f"  Determinism: {'OK' if deterministic else 'FAIL'}")
+
+    # Recognition accuracy: inferred_context == ground_truth context
+    correct = sum(1 for r in all_results if r.inferred_context == r.context)
+    total = len(all_results)
+    print(f"  Recognition accuracy: {correct}/{total} = {correct/total:.1%}")
 
     # Hospital sanity: in hospital context with all fragments, direct_approach should be weak
     hospital_full = [r for r in exp3_results if r.context == "hospital"]

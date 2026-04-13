@@ -1,6 +1,6 @@
 """Statistical Analysis + Figure Generation for Environment Shapes Cognition.
 
-Loads experiment CSV data and generates 14 PDF figures with proper
+Loads experiment CSV data and generates 17 PDF figures with proper
 active inference axis labels and statistical annotations.
 
 Key insight: context-dependent D-matrix gating causes the environment to
@@ -17,6 +17,8 @@ Figures:
   Exp3 (3): behavioral divergence (Jaccard + EFE), sequence comparison,
             weight profiles
   Cross (2): context effect sizes, pipeline overview
+  Perception (3): belief posteriors, effective vs hardcoded affinity,
+                  belief entropy vs EFE
 """
 
 from __future__ import annotations
@@ -222,7 +224,7 @@ def fig_exp1_cue_primitive_heatmap(df: pd.DataFrame):
     fig.tight_layout(rect=[0, 0, 0.92, 0.88])
     fig.savefig(os.path.join(FIG_DIR, "fig_exp1_cue_primitive_heatmap.pdf"))
     plt.close(fig)
-    print("  [1/14] fig_exp1_cue_primitive_heatmap.pdf")
+    print("  [1/17] fig_exp1_cue_primitive_heatmap.pdf")
 
 
 # ================================================================
@@ -279,7 +281,7 @@ def fig_exp1_n_primitives_by_cues(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp1_n_primitives_by_cues.pdf"))
     plt.close(fig)
-    print("  [2/14] fig_exp1_n_primitives_by_cues.pdf")
+    print("  [2/17] fig_exp1_n_primitives_by_cues.pdf")
 
 
 # ================================================================
@@ -353,7 +355,7 @@ def fig_exp1_free_energy_landscape(df: pd.DataFrame):
     fig.tight_layout(rect=[0, 0, 0.92, 0.90])
     fig.savefig(os.path.join(FIG_DIR, "fig_exp1_free_energy_landscape.pdf"))
     plt.close(fig)
-    print("  [3/14] fig_exp1_free_energy_landscape.pdf")
+    print("  [3/17] fig_exp1_free_energy_landscape.pdf")
 
 
 # ================================================================
@@ -397,7 +399,7 @@ def fig_exp1_backbone_by_context(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp1_backbone_by_context.pdf"))
     plt.close(fig)
-    print("  [4/14] fig_exp1_backbone_by_context.pdf")
+    print("  [4/17] fig_exp1_backbone_by_context.pdf")
 
 
 # ================================================================
@@ -430,7 +432,7 @@ def fig_exp1_anova_interaction(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp1_anova_interaction.pdf"))
     plt.close(fig)
-    print("  [5/14] fig_exp1_anova_interaction.pdf")
+    print("  [5/17] fig_exp1_anova_interaction.pdf")
 
 
 # ================================================================
@@ -505,7 +507,7 @@ def fig_exp2_degradation_curves(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp2_degradation_curves.pdf"))
     plt.close(fig)
-    print("  [6/14] fig_exp2_degradation_curves.pdf")
+    print("  [6/17] fig_exp2_degradation_curves.pdf")
 
 
 # ================================================================
@@ -560,7 +562,7 @@ def fig_exp2_subset_violations(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp2_subset_violations.pdf"))
     plt.close(fig)
-    print("  [7/14] fig_exp2_subset_violations.pdf")
+    print("  [7/17] fig_exp2_subset_violations.pdf")
 
 
 # ================================================================
@@ -595,7 +597,7 @@ def fig_exp2_free_energy_vs_fragments(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp2_free_energy_vs_fragments.pdf"))
     plt.close(fig)
-    print("  [8/14] fig_exp2_free_energy_vs_fragments.pdf")
+    print("  [8/17] fig_exp2_free_energy_vs_fragments.pdf")
 
 
 # ================================================================
@@ -643,7 +645,7 @@ def fig_exp2_topology_density(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp2_topology_density.pdf"))
     plt.close(fig)
-    print("  [9/14] fig_exp2_topology_density.pdf")
+    print("  [9/17] fig_exp2_topology_density.pdf")
 
 
 # ================================================================
@@ -757,7 +759,7 @@ def fig_exp3_behavioral_divergence(df: pd.DataFrame):
     fig.tight_layout(rect=[0, 0, 1, 0.92])
     fig.savefig(os.path.join(FIG_DIR, "fig_exp3_behavioral_divergence.pdf"))
     plt.close(fig)
-    print("  [10/14] fig_exp3_behavioral_divergence.pdf")
+    print("  [10/17] fig_exp3_behavioral_divergence.pdf")
 
 
 # ================================================================
@@ -838,7 +840,7 @@ def fig_exp3_sequence_comparison(df: pd.DataFrame):
     fig.tight_layout(rect=[0, 0.05, 1, 0.93])
     fig.savefig(os.path.join(FIG_DIR, "fig_exp3_sequence_comparison.pdf"))
     plt.close(fig)
-    print("  [11/14] fig_exp3_sequence_comparison.pdf")
+    print("  [11/17] fig_exp3_sequence_comparison.pdf")
 
 
 # ================================================================
@@ -879,7 +881,7 @@ def fig_exp3_weight_profiles(df: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_exp3_weight_profiles.pdf"))
     plt.close(fig)
-    print("  [12/14] fig_exp3_weight_profiles.pdf")
+    print("  [12/17] fig_exp3_weight_profiles.pdf")
 
 
 # ================================================================
@@ -948,7 +950,7 @@ def fig_context_effect_sizes(df_all: pd.DataFrame):
     fig.tight_layout()
     fig.savefig(os.path.join(FIG_DIR, "fig_context_effect_sizes.pdf"))
     plt.close(fig)
-    print("  [13/14] fig_context_effect_sizes.pdf")
+    print("  [13/17] fig_context_effect_sizes.pdf")
 
 
 # ================================================================
@@ -1004,13 +1006,14 @@ def fig_pipeline_overview():
         ax.text(mx, mat_y - 0.0, formula, fontsize=8, ha="center")
         ax.text(mx, mat_y - 0.35, desc, fontsize=6, ha="center", color="#666")
 
-    # Pipeline stages (right)
+    # Pipeline stages (right) — now includes A-matrix stage
     stages = [
-        ("1. D-matrix\nScoring", "$w_f = aff \\cdot prec$", 10.0, 6.5),
-        ("2. Belief\nPropagation", "Graph diffusion", 10.0, 5.5),
-        ("3. B-matrix\nConstruction", "compose_from_patterns()", 10.0, 4.5),
-        ("4. Backbone\nExtraction", "Causal sequence", 10.0, 3.5),
-        ("5. Policy\nSelection", "$\\sigma(-\\gamma \\cdot G(\\pi))$", 10.0, 2.5),
+        ("0. A-matrix\nRecognition", "WeakScriptRecognizer", 10.0, 7.0),
+        ("1. D-matrix\nScoring", "$w_f = aff \\cdot prec$", 10.0, 6.0),
+        ("2. Belief\nPropagation", "Graph diffusion", 10.0, 5.0),
+        ("3. B-matrix\nConstruction", "compose_from_patterns()", 10.0, 4.0),
+        ("4. Backbone\nExtraction", "Causal sequence", 10.0, 3.0),
+        ("5. Policy\nSelection", "$\\sigma(-\\gamma \\cdot G(\\pi))$", 10.0, 2.0),
     ]
 
     for label, formula, sx, sy in stages:
@@ -1045,7 +1048,156 @@ def fig_pipeline_overview():
 
     fig.savefig(os.path.join(FIG_DIR, "fig_pipeline_overview.pdf"))
     plt.close(fig)
-    print("  [14/14] fig_pipeline_overview.pdf")
+    print("  [14/17] fig_pipeline_overview.pdf")
+
+
+# ================================================================
+# Figure 15: Situation Belief Posteriors
+# ================================================================
+def fig_belief_posteriors(df: pd.DataFrame):
+    """3-panel: P(s|o) distribution as stacked bars per ground-truth context.
+
+    Tests whether the WeakScriptRecognizer correctly identifies the environment.
+    """
+    belief_cols = ["belief_reception", "belief_corridor", "belief_hospital"]
+    sit_labels = ["Reception", "Corridor", "Hospital"]
+    sit_colors = [CONTEXT_COLORS["reception"], CONTEXT_COLORS["corridor"], CONTEXT_COLORS["hospital"]]
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
+
+    for ax_idx, context in enumerate(CONTEXT_ORDER):
+        ctx = df[df["context"] == context].copy()
+        ax = axes[ax_idx]
+
+        # Group by cue configuration for x-axis
+        ctx["n_cues"] = (ctx["cue_stanchions"] + ctx["cue_waiting_area"]
+                         + ctx["cue_service_sign"] + ctx["cue_social_density"])
+        grouped = ctx.groupby("n_cues")[belief_cols].mean()
+
+        x = np.arange(len(grouped))
+        bottom = np.zeros(len(grouped))
+        for ci, (col, label, color) in enumerate(zip(belief_cols, sit_labels, sit_colors)):
+            vals = grouped[col].values
+            ax.bar(x, vals, bottom=bottom, label=label, color=color, alpha=0.8, width=0.7)
+            bottom += vals
+
+        ax.set_xlabel("Number of material cues")
+        ax.set_xticks(x)
+        ax.set_xticklabels(grouped.index.astype(int))
+        ax.set_title(f"Ground truth: {context.capitalize()}",
+                     color=CONTEXT_COLORS[context], fontweight="bold")
+        if ax_idx == 0:
+            ax.set_ylabel("$P(s|o)$")
+            ax.legend(fontsize=7, loc="lower left")
+
+    fig.suptitle("Situation Belief Posteriors by Ground-Truth Context\n"
+                 "(A-matrix: WeakScriptRecognizer infers situation from percepts)",
+                 fontsize=12)
+    fig.tight_layout(rect=[0, 0, 1, 0.90])
+    fig.savefig(os.path.join(FIG_DIR, "fig_belief_posteriors.pdf"))
+    plt.close(fig)
+    print("  [15/17] fig_belief_posteriors.pdf")
+
+
+# ================================================================
+# Figure 16: Effective vs Hardcoded Affinity
+# ================================================================
+def fig_effective_vs_hardcoded_affinity(df_all: pd.DataFrame):
+    """Scatter: x = hardcoded affinity, y = effective marginalized affinity.
+
+    Shows the correlation between perceptual inference and ground truth.
+    """
+    # Fragment affinities (hardcoded ground truth)
+    hardcoded_affinities = {
+        "observe_scene": {"reception": 0.9, "corridor": 0.4, "hospital": 0.85},
+        "queue_position": {"reception": 0.8, "corridor": 0.3, "hospital": 0.90},
+        "wait_patiently": {"reception": 0.7, "corridor": 0.5, "hospital": 0.95},
+        "approach_service": {"reception": 0.9, "corridor": 0.4, "hospital": 0.80},
+        "courtesy_space": {"reception": 0.3, "corridor": 0.8, "hospital": 0.60},
+        "direct_approach": {"reception": 0.95, "corridor": 0.2, "hospital": 0.15},
+    }
+
+    frag_markers = {
+        "observe_scene": "o", "queue_position": "s", "wait_patiently": "^",
+        "approach_service": "D", "courtesy_space": "P", "direct_approach": "*",
+    }
+
+    fig, ax = plt.subplots(figsize=(9, 8))
+
+    for _, row in df_all.iterrows():
+        context = row["context"]
+        try:
+            eff_affs = json.loads(row["effective_affinities"]) if isinstance(row["effective_affinities"], str) else {}
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        for frag_name, eff_val in eff_affs.items():
+            hard_val = hardcoded_affinities.get(frag_name, {}).get(context, 0.0)
+            marker = frag_markers.get(frag_name, "o")
+            ax.scatter(hard_val, eff_val, c=CONTEXT_COLORS[context],
+                       marker=marker, alpha=0.15, s=30, edgecolors="none")
+
+    # Diagonal reference
+    ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, label="$y = x$ (perfect match)")
+    ax.axhline(0.4, color="red", linestyle=":", alpha=0.4, label=f"Gating threshold $\\theta = 0.4$")
+    ax.axvline(0.4, color="red", linestyle=":", alpha=0.4)
+
+    # Legend for contexts
+    for ctx in CONTEXT_ORDER:
+        ax.scatter([], [], c=CONTEXT_COLORS[ctx], label=ctx.capitalize(), s=40)
+    # Legend for fragments
+    for fname, marker in frag_markers.items():
+        ax.scatter([], [], c="gray", marker=marker, label=fname, s=40)
+
+    ax.set_xlabel("Hardcoded affinity $a_f(c)$")
+    ax.set_ylabel("Effective marginalized affinity $\\sum_s P(s|o) \\cdot a_f(s)$")
+    ax.set_title("Effective vs. Hardcoded Fragment Affinity\n"
+                 "(Perception-grounded inference vs. oracle context)")
+    ax.legend(fontsize=7, loc="upper left", ncol=2)
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(alpha=0.2)
+    ax.set_aspect("equal")
+    fig.tight_layout()
+    fig.savefig(os.path.join(FIG_DIR, "fig_effective_vs_hardcoded_affinity.pdf"))
+    plt.close(fig)
+    print("  [16/17] fig_effective_vs_hardcoded_affinity.pdf")
+
+
+# ================================================================
+# Figure 17: Belief Entropy vs EFE
+# ================================================================
+def fig_belief_entropy_vs_efe(df_all: pd.DataFrame):
+    """Scatter: x = belief_entropy, y = total_EFE.
+
+    Tests whether perceptual uncertainty propagates to policy uncertainty.
+    """
+    fig, ax = plt.subplots(figsize=(9, 6))
+
+    for context in CONTEXT_ORDER:
+        ctx = df_all[df_all["context"] == context]
+        ax.scatter(ctx["belief_entropy"], ctx["total_EFE"],
+                   c=CONTEXT_COLORS[context], alpha=0.5, s=25,
+                   label=context.capitalize(), edgecolors="white", linewidth=0.3)
+
+    # Spearman correlation
+    valid = df_all[df_all["total_EFE"] > 0]
+    if len(valid) > 3:
+        rho = spearman_rank(valid["belief_entropy"].values, valid["total_EFE"].values)
+        ax.text(0.95, 0.95, f"Spearman $\\rho = {rho:.3f}$",
+                transform=ax.transAxes, fontsize=9, ha="right", va="top",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5))
+
+    ax.set_xlabel("Belief entropy $\\mathrm{H}[P(s|o)]$")
+    ax.set_ylabel("Total expected free energy $\\mathcal{G}(\\pi)$")
+    ax.set_title("Perceptual Uncertainty vs. Policy Free Energy\n"
+                 "(Does A-matrix uncertainty propagate to policy evaluation?)")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(os.path.join(FIG_DIR, "fig_belief_entropy_vs_efe.pdf"))
+    plt.close(fig)
+    print("  [17/17] fig_belief_entropy_vs_efe.pdf")
 
 
 # ================================================================
@@ -1105,6 +1257,24 @@ def print_statistics(df1, df2, df3, df_all):
     for c1, c2 in combinations(CONTEXT_ORDER, 2):
         d = cosine_distance(weight_profiles.get(c1, {}), weight_profiles.get(c2, {}))
         print(f"  {c1} vs {c2}: cosine distance = {d:.4f}")
+
+    # Recognition accuracy
+    print("\n--- Perception Pipeline: Recognition Accuracy ---")
+    if "inferred_context" in df_all.columns:
+        correct = (df_all["inferred_context"] == df_all["context"]).sum()
+        total = len(df_all)
+        print(f"  Overall accuracy: {correct}/{total} = {correct/total:.1%}")
+        for context in CONTEXT_ORDER:
+            ctx = df_all[df_all["context"] == context]
+            ctx_correct = (ctx["inferred_context"] == ctx["context"]).sum()
+            print(f"  {context}: {ctx_correct}/{len(ctx)} = {ctx_correct/len(ctx):.1%}")
+
+    # Mean belief entropy per context
+    print("\n--- Perception Pipeline: Mean Belief Entropy ---")
+    if "belief_entropy" in df_all.columns:
+        for context in CONTEXT_ORDER:
+            ctx = df_all[df_all["context"] == context]
+            print(f"  {context}: mean H = {ctx['belief_entropy'].mean():.4f}")
 
     # Cross-experiment: Cohen's d for EFE
     print("\n--- Cross-Experiment: Cohen's d (total_EFE) ---")
@@ -1177,10 +1347,15 @@ def main():
     fig_context_effect_sizes(df_all)
     fig_pipeline_overview()
 
+    # Perception pipeline figures
+    fig_belief_posteriors(df1)
+    fig_effective_vs_hardcoded_affinity(df_all)
+    fig_belief_entropy_vs_efe(df_all)
+
     # Statistics
     print_statistics(df1, df2, df3, df_all)
 
-    print(f"\nAll 14 figures saved to: {FIG_DIR}")
+    print(f"\nAll 17 figures saved to: {FIG_DIR}")
 
 
 if __name__ == "__main__":
