@@ -973,7 +973,7 @@ def run_single_condition_stochastic(
 # Learning phase: train all learners from synthetic episodes
 # ================================================================
 def run_learning_phase(
-    n_episodes_per_context: int = 50,
+    n_episodes_per_context: int = 150,
     noise_std: float = 0.1,
     seed: Optional[int] = None,
 ) -> Tuple[AffinityLearner, PrecisionGating, RecognizerLearner]:
@@ -1037,7 +1037,7 @@ def run_learning_phase(
 
     # VFE minimization: multiple passes accumulating sufficient statistics
     recognizer_learner.train(
-        train_samples, val_samples=test_samples, epochs=10
+        train_samples, val_samples=test_samples, epochs=30
     )
 
     # --- 3. Initialize D-matrix learner (Dirichlet concentrations) ---
@@ -1061,38 +1061,98 @@ def run_learning_phase(
         min_gamma=0.5,
     )
 
-    # --- 5. Warm-up: run episodes, accumulate Dirichlet evidence + update precision ---
+    # --- 5. Unified learning: ablation-based affinity + simultaneous precision ---
     #
-    # Learning proceeds in two sub-phases:
-    # Phase 5a: Exploratory — run ALL fragments (no gating) to accumulate
-    #   differential evidence. Fragments that achieve low VFE in a context
-    #   get more concentration; those that don't get less.
-    # Phase 5b: Exploitation — apply precision gating with learned affinities
-    #   to refine the precision parameter gamma.
-    #
-    # This mirrors the explore-exploit structure inherent in active inference:
-    # initially, epistemic value (information gain) dominates; as concentrations
-    # grow, pragmatic value (goal-directed behavior) takes over.
-    lib = PrimitiveLibrary()
-    _register_reception_primitives(lib)
-
-    # Phase 5a: Exploratory (no gating, accumulate differential evidence)
+    # All episodes run ablation-based affinity learning AND simultaneously
+    # update precision gamma from the full-composition result. This is
+    # principled because ablation provides differential evidence by construction,
+    # and precision can be calibrated from per-transition VFE without
+    # interfering with affinity learning.
     #
     # Uses ABLATION-based evidence: for each context, run the full
     # multi-fragment composition and measure each fragment's marginal
     # contribution to reducing Expected Free Energy (EFE).
     #
-    # This is principled active inference: the D-matrix concentration for
-    # (fragment, context) grows proportionally to how much that fragment
-    # reduces G (expected free energy) in that context.
-    #
     # prediction_error(f, c) = EFE_full(c) - EFE_without_f(c)
     #   - Negative → f reduces EFE in c → high evidence (good fit)
     #   - Positive → f increases EFE in c → low evidence (bad fit)
     #
-    explore_episodes = max(n_episodes_per_context * 4 // 5, 10)
+    # Key insight: EFE-based PE is deterministic for a given (fragment, context),
+    # so more episodes accumulate the same evidence. The critical factor is
+    # proper calibration of F_0 (evidence scale) relative to the cross-context
+    # differential signal.
+    #
+    # We use per-fragment centered PE: PE_centered(f,c) = PE(f,c) - mean_c(PE(f,c))
+    # This isolates the context-specific signal and ensures evidence values are
+    # O(1) regardless of the absolute PE magnitude, enabling small F_0 to
+    # amplify cross-context differences without collapsing evidence to zero.
+    #
+    lib = PrimitiveLibrary()
+    _register_reception_primitives(lib)
+
+    # --- 5a. Calibration pass: one episode per context to establish baselines ---
+    # Since EFE-based PE is deterministic, one episode per context gives us
+    # all the information needed to calibrate F_0 and per-fragment baselines.
+    raw_pe: dict = {f: {} for f in ALL_FRAGMENT_NAMES}  # raw_pe[frag][ctx] = PE
+    calibration_results: dict = {}  # context -> full_result
+
     for context in CONTEXTS:
-        for ep_idx in range(explore_episodes):
+        ep_seed = int(rng.integers(0, 2**31))
+
+        full_cond = ExperimentCondition(
+            experiment="learning",
+            condition_id=f"calibrate_{context}_full",
+            context=context,
+            fragment_names=list(ALL_FRAGMENT_NAMES),
+        )
+        full_result = run_single_condition_stochastic(
+            full_cond,
+            noise_std=noise_std,
+            seed=ep_seed,
+            threshold=0.0,
+        )
+        calibration_results[context] = full_result
+        efe_full = full_result.total_EFE
+
+        for frag_name in ALL_FRAGMENT_NAMES:
+            ablated_frags = [f for f in ALL_FRAGMENT_NAMES if f != frag_name]
+            ablated_cond = ExperimentCondition(
+                experiment="learning",
+                condition_id=f"calibrate_{context}_no_{frag_name}",
+                context=context,
+                fragment_names=ablated_frags,
+            )
+            ablated_result = run_single_condition_stochastic(
+                ablated_cond,
+                noise_std=noise_std,
+                seed=ep_seed,
+                threshold=0.0,
+            )
+            raw_pe[frag_name][context] = efe_full - ablated_result.total_EFE
+
+    # Compute per-fragment baselines (mean PE across contexts)
+    frag_baseline: dict = {}
+    for frag_name in ALL_FRAGMENT_NAMES:
+        frag_baseline[frag_name] = np.mean(
+            [raw_pe[frag_name][ctx] for ctx in CONTEXTS]
+        )
+
+    # Calibrate F_0 from cross-context differential signal (empirical Bayes).
+    # Use median per-fragment std: the typical scale of cross-context variation
+    # for a single fragment. This is robust to outlier fragments with unusually
+    # large ranges and ensures exp(-PE_centered/F_0) produces evidence ratios
+    # that resolve typical cross-context differences.
+    per_frag_stds = []
+    for frag_name in ALL_FRAGMENT_NAMES:
+        centered = [raw_pe[frag_name][ctx] - frag_baseline[frag_name]
+                    for ctx in CONTEXTS]
+        per_frag_stds.append(np.std(centered))
+    f0_calibrated = max(float(np.median(per_frag_stds)), 0.3)
+    affinity_learner._fe_scale = f0_calibrated
+
+    # --- 5b. Learning episodes: accumulate evidence with centered PE ---
+    for context in CONTEXTS:
+        for ep_idx in range(n_episodes_per_context):
             ep_seed = int(rng.integers(0, 2**31))
 
             # 1. Run full composition with ALL fragments (no gating)
@@ -1127,10 +1187,10 @@ def run_learning_phase(
                 )
                 efe_without = ablated_result.total_EFE
 
-                # Marginal contribution: prediction_error = EFE_full - EFE_without
-                # If f REDUCES EFE (good fit): efe_full < efe_without → PE < 0 → high evidence
-                # If f INCREASES EFE (bad fit): efe_full > efe_without → PE > 0 → low evidence
-                prediction_error = efe_full - efe_without
+                # Marginal contribution (centered per-fragment):
+                # Subtracting the baseline isolates context-specific signal
+                # and keeps evidence O(1) for proper Dirichlet accumulation.
+                prediction_error = (efe_full - efe_without) - frag_baseline[frag_name]
 
                 # Accuracy scales evidence by recognizer certainty
                 accuracy = full_result.belief_confidence
@@ -1142,42 +1202,11 @@ def run_learning_phase(
                     accuracy=accuracy,
                 )
 
-    # Phase 5b: Exploitation (precision gating calibration only)
-    # After exploration establishes differential affinities, use them with
-    # precision gating to calibrate gamma via variational Laplace.
-    # Affinity learning is NOT continued here — the ablation-based evidence
-    # from Phase 5a provides the principled signal; the exploitation phase
-    # would only apply uniform evidence to all active fragments, diluting
-    # the differential structure learned during exploration.
-    exploit_episodes = n_episodes_per_context - explore_episodes
-    for context in CONTEXTS:
-        for ep_idx in range(exploit_episodes):
-            ep_seed = int(rng.integers(0, 2**31))
-            cond = ExperimentCondition(
-                experiment="learning",
-                condition_id=f"exploit_{context}_{ep_idx}",
-                context=context,
-                fragment_names=list(ALL_FRAGMENT_NAMES),
-            )
-
-            # Use precision gating with learned affinities
-            result = run_single_condition_stochastic(
-                cond,
-                noise_std=noise_std,
-                seed=ep_seed,
-                precision_gating=precision_gating,
-                learned_affinities=affinity_learner.affinities,
-            )
-
-            # Update precision via variational Laplace
-            # Per-transition VFE: observation-level prediction error
-            # (calibrates gamma against per-observation surprisal, not total trajectory)
-            n_active = result.n_active_fragments
-            n_total = len(ALL_FRAGMENT_NAMES)
+            # 3. Simultaneously calibrate precision from full-composition VFE
             precision_gating.update(
-                prediction_error=result.per_transition_VFE,
-                n_active=n_active,
-                n_total=n_total,
+                prediction_error=full_result.per_transition_VFE,
+                n_active=len(ALL_FRAGMENT_NAMES),  # all active (no gating in learning)
+                n_total=len(ALL_FRAGMENT_NAMES),
             )
 
     return affinity_learner, precision_gating, recognizer_learner

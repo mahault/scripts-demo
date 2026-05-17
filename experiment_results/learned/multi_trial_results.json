@@ -6,7 +6,7 @@
     "n_trials": 50,
     "vfe_mean": 2.302585,
     "vfe_std": 0.0,
-    "efe_mean": 19.04841,
+    "efe_mean": 17.295294,
     "efe_std": 0.0,
     "n_primitives_mean": 8.0,
     "n_primitives_std": 0.0,
@@ -18,7 +18,7 @@
         "trial_idx": 0,
         "seed": 1501552846,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -27,7 +27,7 @@
         "trial_idx": 1,
         "seed": 488200390,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -36,7 +36,7 @@
         "trial_idx": 2,
         "seed": 1693606511,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -45,7 +45,7 @@
         "trial_idx": 3,
         "seed": 680233354,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -54,7 +54,7 @@
         "trial_idx": 4,
         "seed": 438466540,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -63,7 +63,7 @@
         "trial_idx": 5,
         "seed": 1712329281,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -72,7 +72,7 @@
         "trial_idx": 6,
         "seed": 1380152456,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -81,7 +81,7 @@
         "trial_idx": 7,
         "seed": 1452245847,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -90,7 +90,7 @@
         "trial_idx": 8,
         "seed": 2122694022,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -99,7 +99,7 @@
         "trial_idx": 9,
         "seed": 839901364,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -108,7 +108,7 @@
         "trial_idx": 10,
         "seed": 1802651553,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -117,7 +117,7 @@
         "trial_idx": 11,
         "seed": 714712467,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -126,7 +126,7 @@
         "trial_idx": 12,
         "seed": 1218704078,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -135,7 +135,7 @@
         "trial_idx": 13,
         "seed": 1284858264,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -144,7 +144,7 @@
         "trial_idx": 14,
         "seed": 457721135,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -153,7 +153,7 @@
         "trial_idx": 15,
         "seed": 401008610,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -162,7 +162,7 @@
         "trial_idx": 16,
         "seed": 492064534,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -171,7 +171,7 @@
         "trial_idx": 17,
         "seed": 1444732603,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -180,7 +180,7 @@
         "trial_idx": 18,
         "seed": 1317426687,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -189,7 +189,7 @@
         "trial_idx": 19,
         "seed": 2022506252,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -198,7 +198,7 @@
         "trial_idx": 20,
         "seed": 1516459119,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -207,7 +207,7 @@
         "trial_idx": 21,
         "seed": 533103612,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -216,7 +216,7 @@
         "trial_idx": 22,
         "seed": 1964759879,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -225,7 +225,7 @@
         "trial_idx": 23,
         "seed": 2037706757,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -234,7 +234,7 @@
         "trial_idx": 24,
         "seed": 1572889066,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -243,7 +243,7 @@
         "trial_idx": 25,
         "seed": 1432881519,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -252,7 +252,7 @@
         "trial_idx": 26,
         "seed": 280516901,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -261,7 +261,7 @@
         "trial_idx": 27,
         "seed": 205939248,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -270,7 +270,7 @@
         "trial_idx": 28,
         "seed": 571904914,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -279,7 +279,7 @@
         "trial_idx": 29,
         "seed": 948843458,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -288,7 +288,7 @@
         "trial_idx": 30,
         "seed": 155492489,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -297,7 +297,7 @@
         "trial_idx": 31,
         "seed": 1903701131,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -306,7 +306,7 @@
         "trial_idx": 32,
         "seed": 1017961267,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -315,7 +315,7 @@
         "trial_idx": 33,
         "seed": 1497769986,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -324,7 +324,7 @@
         "trial_idx": 34,
         "seed": 456523489,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -333,7 +333,7 @@
         "trial_idx": 35,
         "seed": 701095137,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -342,7 +342,7 @@
         "trial_idx": 36,
         "seed": 249069577,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -351,7 +351,7 @@
         "trial_idx": 37,
         "seed": 1576098729,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -360,7 +360,7 @@
         "trial_idx": 38,
         "seed": 1662748501,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -369,7 +369,7 @@
         "trial_idx": 39,
         "seed": 472736217,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -378,7 +378,7 @@
         "trial_idx": 40,
         "seed": 1535411296,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -387,7 +387,7 @@
         "trial_idx": 41,
         "seed": 175223003,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -396,7 +396,7 @@
         "trial_idx": 42,
         "seed": 840936862,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -405,7 +405,7 @@
         "trial_idx": 43,
         "seed": 343373188,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -414,7 +414,7 @@
         "trial_idx": 44,
         "seed": 1597751083,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -423,7 +423,7 @@
         "trial_idx": 45,
         "seed": 730359585,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -432,7 +432,7 @@
         "trial_idx": 46,
         "seed": 1016641002,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -441,7 +441,7 @@
         "trial_idx": 47,
         "seed": 998994690,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -450,7 +450,7 @@
         "trial_idx": 48,
         "seed": 1021240743,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -459,7 +459,7 @@
         "trial_idx": 49,
         "seed": 572134801,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -473,7 +473,7 @@
     "n_trials": 50,
     "vfe_mean": 0.0,
     "vfe_std": 0.0,
-    "efe_mean": 4.204747,
+    "efe_mean": 3.133791,
     "efe_std": 0.0,
     "n_primitives_mean": 2.0,
     "n_primitives_std": 0.0,
@@ -485,7 +485,7 @@
         "trial_idx": 0,
         "seed": 1198399761,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -494,7 +494,7 @@
         "trial_idx": 1,
         "seed": 1751866486,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -503,7 +503,7 @@
         "trial_idx": 2,
         "seed": 1070889714,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -512,7 +512,7 @@
         "trial_idx": 3,
         "seed": 415096540,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -521,7 +521,7 @@
         "trial_idx": 4,
         "seed": 52416236,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -530,7 +530,7 @@
         "trial_idx": 5,
         "seed": 278032724,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -539,7 +539,7 @@
         "trial_idx": 6,
         "seed": 174946158,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -548,7 +548,7 @@
         "trial_idx": 7,
         "seed": 196848555,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -557,7 +557,7 @@
         "trial_idx": 8,
         "seed": 263030910,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -566,7 +566,7 @@
         "trial_idx": 9,
         "seed": 1285415021,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -575,7 +575,7 @@
         "trial_idx": 10,
         "seed": 1733223445,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -584,7 +584,7 @@
         "trial_idx": 11,
         "seed": 1835544262,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -593,7 +593,7 @@
         "trial_idx": 12,
         "seed": 1403186971,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -602,7 +602,7 @@
         "trial_idx": 13,
         "seed": 1291971778,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -611,7 +611,7 @@
         "trial_idx": 14,
         "seed": 712292068,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -620,7 +620,7 @@
         "trial_idx": 15,
         "seed": 2001429765,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -629,7 +629,7 @@
         "trial_idx": 16,
         "seed": 1375664062,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -638,7 +638,7 @@
         "trial_idx": 17,
         "seed": 1556456121,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -647,7 +647,7 @@
         "trial_idx": 18,
         "seed": 1576053188,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -656,7 +656,7 @@
         "trial_idx": 19,
         "seed": 1848019882,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -665,7 +665,7 @@
         "trial_idx": 20,
         "seed": 1508652586,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -674,7 +674,7 @@
         "trial_idx": 21,
         "seed": 1995737732,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -683,7 +683,7 @@
         "trial_idx": 22,
         "seed": 1162788448,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -692,7 +692,7 @@
         "trial_idx": 23,
         "seed": 1172925523,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -701,7 +701,7 @@
         "trial_idx": 24,
         "seed": 539174575,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -710,7 +710,7 @@
         "trial_idx": 25,
         "seed": 2013637346,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -719,7 +719,7 @@
         "trial_idx": 26,
         "seed": 1187468717,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -728,7 +728,7 @@
         "trial_idx": 27,
         "seed": 1062978507,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -737,7 +737,7 @@
         "trial_idx": 28,
         "seed": 679326770,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -746,7 +746,7 @@
         "trial_idx": 29,
         "seed": 587923432,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -755,7 +755,7 @@
         "trial_idx": 30,
         "seed": 1359889668,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -764,7 +764,7 @@
         "trial_idx": 31,
         "seed": 970187386,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -773,7 +773,7 @@
         "trial_idx": 32,
         "seed": 1219839874,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -782,7 +782,7 @@
         "trial_idx": 33,
         "seed": 1428160213,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -791,7 +791,7 @@
         "trial_idx": 34,
         "seed": 1930609500,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -800,7 +800,7 @@
         "trial_idx": 35,
         "seed": 710582862,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -809,7 +809,7 @@
         "trial_idx": 36,
         "seed": 1463614338,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -818,7 +818,7 @@
         "trial_idx": 37,
         "seed": 1940152706,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -827,7 +827,7 @@
         "trial_idx": 38,
         "seed": 985452197,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -836,7 +836,7 @@
         "trial_idx": 39,
         "seed": 552062587,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -845,7 +845,7 @@
         "trial_idx": 40,
         "seed": 623566272,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -854,7 +854,7 @@
         "trial_idx": 41,
         "seed": 729775798,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -863,7 +863,7 @@
         "trial_idx": 42,
         "seed": 1352536666,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -872,7 +872,7 @@
         "trial_idx": 43,
         "seed": 555883440,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -881,7 +881,7 @@
         "trial_idx": 44,
         "seed": 1801800004,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -890,7 +890,7 @@
         "trial_idx": 45,
         "seed": 763315503,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -899,7 +899,7 @@
         "trial_idx": 46,
         "seed": 138897983,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -908,7 +908,7 @@
         "trial_idx": 47,
         "seed": 10785379,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -917,7 +917,7 @@
         "trial_idx": 48,
         "seed": 53923186,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -926,7 +926,7 @@
         "trial_idx": 49,
         "seed": 1349917979,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -940,7 +940,7 @@
     "n_trials": 50,
     "vfe_mean": 9.21034,
     "vfe_std": 0.0,
-    "efe_mean": 20.630185,
+    "efe_mean": 17.71669,
     "efe_std": 0.0,
     "n_primitives_mean": 9.0,
     "n_primitives_std": 0.0,
@@ -952,7 +952,7 @@
         "trial_idx": 0,
         "seed": 744789066,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -961,7 +961,7 @@
         "trial_idx": 1,
         "seed": 606412246,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -970,7 +970,7 @@
         "trial_idx": 2,
         "seed": 1311962372,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -979,7 +979,7 @@
         "trial_idx": 3,
         "seed": 146217199,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -988,7 +988,7 @@
         "trial_idx": 4,
         "seed": 1162395142,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -997,7 +997,7 @@
         "trial_idx": 5,
         "seed": 1324630142,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1006,7 +1006,7 @@
         "trial_idx": 6,
         "seed": 68269103,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1015,7 +1015,7 @@
         "trial_idx": 7,
         "seed": 378657889,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1024,7 +1024,7 @@
         "trial_idx": 8,
         "seed": 838210359,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1033,7 +1033,7 @@
         "trial_idx": 9,
         "seed": 653669084,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1042,7 +1042,7 @@
         "trial_idx": 10,
         "seed": 2041536190,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1051,7 +1051,7 @@
         "trial_idx": 11,
         "seed": 946797216,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1060,7 +1060,7 @@
         "trial_idx": 12,
         "seed": 1389289276,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1069,7 +1069,7 @@
         "trial_idx": 13,
         "seed": 322557071,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1078,7 +1078,7 @@
         "trial_idx": 14,
         "seed": 1731742694,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1087,7 +1087,7 @@
         "trial_idx": 15,
         "seed": 467998669,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1096,7 +1096,7 @@
         "trial_idx": 16,
         "seed": 1647913985,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1105,7 +1105,7 @@
         "trial_idx": 17,
         "seed": 1018622608,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1114,7 +1114,7 @@
         "trial_idx": 18,
         "seed": 873344961,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1123,7 +1123,7 @@
         "trial_idx": 19,
         "seed": 1022994326,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1132,7 +1132,7 @@
         "trial_idx": 20,
         "seed": 1150738892,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1141,7 +1141,7 @@
         "trial_idx": 21,
         "seed": 548107306,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1150,7 +1150,7 @@
         "trial_idx": 22,
         "seed": 260569130,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1159,7 +1159,7 @@
         "trial_idx": 23,
         "seed": 639016547,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1168,7 +1168,7 @@
         "trial_idx": 24,
         "seed": 2123951057,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1177,7 +1177,7 @@
         "trial_idx": 25,
         "seed": 599292076,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1186,7 +1186,7 @@
         "trial_idx": 26,
         "seed": 1433570084,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1195,7 +1195,7 @@
         "trial_idx": 27,
         "seed": 559589597,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1204,7 +1204,7 @@
         "trial_idx": 28,
         "seed": 1799442137,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1213,7 +1213,7 @@
         "trial_idx": 29,
         "seed": 1036722626,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1222,7 +1222,7 @@
         "trial_idx": 30,
         "seed": 1218338985,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1231,7 +1231,7 @@
         "trial_idx": 31,
         "seed": 455221514,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1240,7 +1240,7 @@
         "trial_idx": 32,
         "seed": 1304975115,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1249,7 +1249,7 @@
         "trial_idx": 33,
         "seed": 1064358601,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1258,7 +1258,7 @@
         "trial_idx": 34,
         "seed": 1530335910,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1267,7 +1267,7 @@
         "trial_idx": 35,
         "seed": 528842170,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1276,7 +1276,7 @@
         "trial_idx": 36,
         "seed": 1307520021,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1285,7 +1285,7 @@
         "trial_idx": 37,
         "seed": 1800627785,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1294,7 +1294,7 @@
         "trial_idx": 38,
         "seed": 1003642109,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1303,7 +1303,7 @@
         "trial_idx": 39,
         "seed": 386827496,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1312,7 +1312,7 @@
         "trial_idx": 40,
         "seed": 156365210,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1321,7 +1321,7 @@
         "trial_idx": 41,
         "seed": 1851466538,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1330,7 +1330,7 @@
         "trial_idx": 42,
         "seed": 1084556789,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1339,7 +1339,7 @@
         "trial_idx": 43,
         "seed": 382895142,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1348,7 +1348,7 @@
         "trial_idx": 44,
         "seed": 630896202,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1357,7 +1357,7 @@
         "trial_idx": 45,
         "seed": 1611753762,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1366,7 +1366,7 @@
         "trial_idx": 46,
         "seed": 795837703,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1375,7 +1375,7 @@
         "trial_idx": 47,
         "seed": 1312371074,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1384,7 +1384,7 @@
         "trial_idx": 48,
         "seed": 1743985091,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1393,7 +1393,7 @@
         "trial_idx": 49,
         "seed": 449157017,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -1407,7 +1407,7 @@
     "n_trials": 50,
     "vfe_mean": 2.302585,
     "vfe_std": 0.0,
-    "efe_mean": 19.04841,
+    "efe_mean": 17.295294,
     "efe_std": 0.0,
     "n_primitives_mean": 8.0,
     "n_primitives_std": 0.0,
@@ -1419,7 +1419,7 @@
         "trial_idx": 0,
         "seed": 1846620140,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1428,7 +1428,7 @@
         "trial_idx": 1,
         "seed": 1631813598,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1437,7 +1437,7 @@
         "trial_idx": 2,
         "seed": 718941255,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1446,7 +1446,7 @@
         "trial_idx": 3,
         "seed": 535282997,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1455,7 +1455,7 @@
         "trial_idx": 4,
         "seed": 739473027,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1464,7 +1464,7 @@
         "trial_idx": 5,
         "seed": 183763895,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1473,7 +1473,7 @@
         "trial_idx": 6,
         "seed": 921601426,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1482,7 +1482,7 @@
         "trial_idx": 7,
         "seed": 1327266704,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1491,7 +1491,7 @@
         "trial_idx": 8,
         "seed": 1656962607,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1500,7 +1500,7 @@
         "trial_idx": 9,
         "seed": 1153130710,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1509,7 +1509,7 @@
         "trial_idx": 10,
         "seed": 232026619,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1518,7 +1518,7 @@
         "trial_idx": 11,
         "seed": 1362635736,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1527,7 +1527,7 @@
         "trial_idx": 12,
         "seed": 211875281,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1536,7 +1536,7 @@
         "trial_idx": 13,
         "seed": 374465547,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1545,7 +1545,7 @@
         "trial_idx": 14,
         "seed": 2065851860,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1554,7 +1554,7 @@
         "trial_idx": 15,
         "seed": 532929183,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1563,7 +1563,7 @@
         "trial_idx": 16,
         "seed": 1235511628,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1572,7 +1572,7 @@
         "trial_idx": 17,
         "seed": 1470646161,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1581,7 +1581,7 @@
         "trial_idx": 18,
         "seed": 1763790483,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1590,7 +1590,7 @@
         "trial_idx": 19,
         "seed": 173670537,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1599,7 +1599,7 @@
         "trial_idx": 20,
         "seed": 1805008945,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1608,7 +1608,7 @@
         "trial_idx": 21,
         "seed": 1879206248,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1617,7 +1617,7 @@
         "trial_idx": 22,
         "seed": 1488659698,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1626,7 +1626,7 @@
         "trial_idx": 23,
         "seed": 920614174,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1635,7 +1635,7 @@
         "trial_idx": 24,
         "seed": 575464500,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1644,7 +1644,7 @@
         "trial_idx": 25,
         "seed": 1327991422,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1653,7 +1653,7 @@
         "trial_idx": 26,
         "seed": 1444571964,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1662,7 +1662,7 @@
         "trial_idx": 27,
         "seed": 672388950,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1671,7 +1671,7 @@
         "trial_idx": 28,
         "seed": 1463826283,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1680,7 +1680,7 @@
         "trial_idx": 29,
         "seed": 384319805,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1689,7 +1689,7 @@
         "trial_idx": 30,
         "seed": 549845687,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1698,7 +1698,7 @@
         "trial_idx": 31,
         "seed": 20856635,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1707,7 +1707,7 @@
         "trial_idx": 32,
         "seed": 625331722,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1716,7 +1716,7 @@
         "trial_idx": 33,
         "seed": 451063818,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1725,7 +1725,7 @@
         "trial_idx": 34,
         "seed": 1765333525,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1734,7 +1734,7 @@
         "trial_idx": 35,
         "seed": 1868312231,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1743,7 +1743,7 @@
         "trial_idx": 36,
         "seed": 1871869743,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1752,7 +1752,7 @@
         "trial_idx": 37,
         "seed": 2089136092,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1761,7 +1761,7 @@
         "trial_idx": 38,
         "seed": 1350752518,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1770,7 +1770,7 @@
         "trial_idx": 39,
         "seed": 948741832,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1779,7 +1779,7 @@
         "trial_idx": 40,
         "seed": 1250404834,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1788,7 +1788,7 @@
         "trial_idx": 41,
         "seed": 813358346,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1797,7 +1797,7 @@
         "trial_idx": 42,
         "seed": 1016531150,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1806,7 +1806,7 @@
         "trial_idx": 43,
         "seed": 592591844,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1815,7 +1815,7 @@
         "trial_idx": 44,
         "seed": 1488505755,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1824,7 +1824,7 @@
         "trial_idx": 45,
         "seed": 2074692776,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1833,7 +1833,7 @@
         "trial_idx": 46,
         "seed": 341015522,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1842,7 +1842,7 @@
         "trial_idx": 47,
         "seed": 124989143,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1851,7 +1851,7 @@
         "trial_idx": 48,
         "seed": 812260401,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1860,7 +1860,7 @@
         "trial_idx": 49,
         "seed": 877749364,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -1874,7 +1874,7 @@
     "n_trials": 50,
     "vfe_mean": 0.0,
     "vfe_std": 0.0,
-    "efe_mean": 4.204747,
+    "efe_mean": 3.133791,
     "efe_std": 0.0,
     "n_primitives_mean": 2.0,
     "n_primitives_std": 0.0,
@@ -1886,7 +1886,7 @@
         "trial_idx": 0,
         "seed": 885012874,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1895,7 +1895,7 @@
         "trial_idx": 1,
         "seed": 362127686,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1904,7 +1904,7 @@
         "trial_idx": 2,
         "seed": 352109287,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1913,7 +1913,7 @@
         "trial_idx": 3,
         "seed": 515705438,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1922,7 +1922,7 @@
         "trial_idx": 4,
         "seed": 1242333320,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1931,7 +1931,7 @@
         "trial_idx": 5,
         "seed": 1675054116,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1940,7 +1940,7 @@
         "trial_idx": 6,
         "seed": 1015525195,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1949,7 +1949,7 @@
         "trial_idx": 7,
         "seed": 437587580,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1958,7 +1958,7 @@
         "trial_idx": 8,
         "seed": 916418953,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1967,7 +1967,7 @@
         "trial_idx": 9,
         "seed": 1185520398,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1976,7 +1976,7 @@
         "trial_idx": 10,
         "seed": 2008950749,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1985,7 +1985,7 @@
         "trial_idx": 11,
         "seed": 788113918,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -1994,7 +1994,7 @@
         "trial_idx": 12,
         "seed": 512725733,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2003,7 +2003,7 @@
         "trial_idx": 13,
         "seed": 1089379201,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2012,7 +2012,7 @@
         "trial_idx": 14,
         "seed": 130662949,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2021,7 +2021,7 @@
         "trial_idx": 15,
         "seed": 716052216,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2030,7 +2030,7 @@
         "trial_idx": 16,
         "seed": 351559949,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2039,7 +2039,7 @@
         "trial_idx": 17,
         "seed": 607140172,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2048,7 +2048,7 @@
         "trial_idx": 18,
         "seed": 274213066,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2057,7 +2057,7 @@
         "trial_idx": 19,
         "seed": 605225963,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2066,7 +2066,7 @@
         "trial_idx": 20,
         "seed": 754096504,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2075,7 +2075,7 @@
         "trial_idx": 21,
         "seed": 183354928,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2084,7 +2084,7 @@
         "trial_idx": 22,
         "seed": 739260265,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2093,7 +2093,7 @@
         "trial_idx": 23,
         "seed": 1034686947,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2102,7 +2102,7 @@
         "trial_idx": 24,
         "seed": 201839291,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2111,7 +2111,7 @@
         "trial_idx": 25,
         "seed": 1896964421,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2120,7 +2120,7 @@
         "trial_idx": 26,
         "seed": 1881585974,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2129,7 +2129,7 @@
         "trial_idx": 27,
         "seed": 2034156138,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2138,7 +2138,7 @@
         "trial_idx": 28,
         "seed": 257125714,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2147,7 +2147,7 @@
         "trial_idx": 29,
         "seed": 58806095,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2156,7 +2156,7 @@
         "trial_idx": 30,
         "seed": 2081075820,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2165,7 +2165,7 @@
         "trial_idx": 31,
         "seed": 1970857937,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2174,7 +2174,7 @@
         "trial_idx": 32,
         "seed": 1721470525,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2183,7 +2183,7 @@
         "trial_idx": 33,
         "seed": 260971939,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2192,7 +2192,7 @@
         "trial_idx": 34,
         "seed": 1432184336,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2201,7 +2201,7 @@
         "trial_idx": 35,
         "seed": 1605990835,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2210,7 +2210,7 @@
         "trial_idx": 36,
         "seed": 620819972,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2219,7 +2219,7 @@
         "trial_idx": 37,
         "seed": 1925263633,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2228,7 +2228,7 @@
         "trial_idx": 38,
         "seed": 1619008473,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2237,7 +2237,7 @@
         "trial_idx": 39,
         "seed": 360626499,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2246,7 +2246,7 @@
         "trial_idx": 40,
         "seed": 1240885930,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2255,7 +2255,7 @@
         "trial_idx": 41,
         "seed": 711811843,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2264,7 +2264,7 @@
         "trial_idx": 42,
         "seed": 1687037082,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2273,7 +2273,7 @@
         "trial_idx": 43,
         "seed": 812085169,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2282,7 +2282,7 @@
         "trial_idx": 44,
         "seed": 1851858493,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2291,7 +2291,7 @@
         "trial_idx": 45,
         "seed": 744852464,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2300,7 +2300,7 @@
         "trial_idx": 46,
         "seed": 1426001517,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2309,7 +2309,7 @@
         "trial_idx": 47,
         "seed": 1108650676,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2318,7 +2318,7 @@
         "trial_idx": 48,
         "seed": 900209676,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2327,7 +2327,7 @@
         "trial_idx": 49,
         "seed": 19314526,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -2341,7 +2341,7 @@
     "n_trials": 50,
     "vfe_mean": 9.21034,
     "vfe_std": 0.0,
-    "efe_mean": 20.630185,
+    "efe_mean": 17.71669,
     "efe_std": 0.0,
     "n_primitives_mean": 9.0,
     "n_primitives_std": 0.0,
@@ -2353,7 +2353,7 @@
         "trial_idx": 0,
         "seed": 2112775689,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2362,7 +2362,7 @@
         "trial_idx": 1,
         "seed": 907694532,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2371,7 +2371,7 @@
         "trial_idx": 2,
         "seed": 717277258,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2380,7 +2380,7 @@
         "trial_idx": 3,
         "seed": 1884755622,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2389,7 +2389,7 @@
         "trial_idx": 4,
         "seed": 6988558,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2398,7 +2398,7 @@
         "trial_idx": 5,
         "seed": 187701136,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2407,7 +2407,7 @@
         "trial_idx": 6,
         "seed": 1014468013,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2416,7 +2416,7 @@
         "trial_idx": 7,
         "seed": 1039564229,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2425,7 +2425,7 @@
         "trial_idx": 8,
         "seed": 1838209005,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2434,7 +2434,7 @@
         "trial_idx": 9,
         "seed": 1033428675,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2443,7 +2443,7 @@
         "trial_idx": 10,
         "seed": 1515697863,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2452,7 +2452,7 @@
         "trial_idx": 11,
         "seed": 1680559478,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2461,7 +2461,7 @@
         "trial_idx": 12,
         "seed": 564881605,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2470,7 +2470,7 @@
         "trial_idx": 13,
         "seed": 2071375915,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2479,7 +2479,7 @@
         "trial_idx": 14,
         "seed": 2024285042,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2488,7 +2488,7 @@
         "trial_idx": 15,
         "seed": 1518478045,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2497,7 +2497,7 @@
         "trial_idx": 16,
         "seed": 99505552,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2506,7 +2506,7 @@
         "trial_idx": 17,
         "seed": 587845132,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2515,7 +2515,7 @@
         "trial_idx": 18,
         "seed": 284890506,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2524,7 +2524,7 @@
         "trial_idx": 19,
         "seed": 1439057355,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2533,7 +2533,7 @@
         "trial_idx": 20,
         "seed": 54750941,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2542,7 +2542,7 @@
         "trial_idx": 21,
         "seed": 746325306,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2551,7 +2551,7 @@
         "trial_idx": 22,
         "seed": 6626651,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2560,7 +2560,7 @@
         "trial_idx": 23,
         "seed": 1649541967,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2569,7 +2569,7 @@
         "trial_idx": 24,
         "seed": 807520704,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2578,7 +2578,7 @@
         "trial_idx": 25,
         "seed": 1451208066,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2587,7 +2587,7 @@
         "trial_idx": 26,
         "seed": 364289331,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2596,7 +2596,7 @@
         "trial_idx": 27,
         "seed": 2099234045,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2605,7 +2605,7 @@
         "trial_idx": 28,
         "seed": 927581972,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2614,7 +2614,7 @@
         "trial_idx": 29,
         "seed": 1861245100,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2623,7 +2623,7 @@
         "trial_idx": 30,
         "seed": 2121343972,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2632,7 +2632,7 @@
         "trial_idx": 31,
         "seed": 99016207,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2641,7 +2641,7 @@
         "trial_idx": 32,
         "seed": 2071606572,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2650,7 +2650,7 @@
         "trial_idx": 33,
         "seed": 623465426,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2659,7 +2659,7 @@
         "trial_idx": 34,
         "seed": 2010345980,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2668,7 +2668,7 @@
         "trial_idx": 35,
         "seed": 1851970780,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2677,7 +2677,7 @@
         "trial_idx": 36,
         "seed": 166478992,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2686,7 +2686,7 @@
         "trial_idx": 37,
         "seed": 1290310898,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2695,7 +2695,7 @@
         "trial_idx": 38,
         "seed": 174356552,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2704,7 +2704,7 @@
         "trial_idx": 39,
         "seed": 739288336,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2713,7 +2713,7 @@
         "trial_idx": 40,
         "seed": 1893757009,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2722,7 +2722,7 @@
         "trial_idx": 41,
         "seed": 119405624,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2731,7 +2731,7 @@
         "trial_idx": 42,
         "seed": 1256948812,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2740,7 +2740,7 @@
         "trial_idx": 43,
         "seed": 1638256584,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2749,7 +2749,7 @@
         "trial_idx": 44,
         "seed": 1436250864,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2758,7 +2758,7 @@
         "trial_idx": 45,
         "seed": 3261571,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2767,7 +2767,7 @@
         "trial_idx": 46,
         "seed": 1453808601,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2776,7 +2776,7 @@
         "trial_idx": 47,
         "seed": 199379982,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2785,7 +2785,7 @@
         "trial_idx": 48,
         "seed": 1729115320,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2794,7 +2794,7 @@
         "trial_idx": 49,
         "seed": 2133533937,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -2808,7 +2808,7 @@
     "n_trials": 50,
     "vfe_mean": 2.302585,
     "vfe_std": 0.0,
-    "efe_mean": 19.04841,
+    "efe_mean": 17.295294,
     "efe_std": 0.0,
     "n_primitives_mean": 8.0,
     "n_primitives_std": 0.0,
@@ -2820,7 +2820,7 @@
         "trial_idx": 0,
         "seed": 2073482014,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2829,7 +2829,7 @@
         "trial_idx": 1,
         "seed": 1666475393,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2838,7 +2838,7 @@
         "trial_idx": 2,
         "seed": 725704790,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2847,7 +2847,7 @@
         "trial_idx": 3,
         "seed": 1864597480,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2856,7 +2856,7 @@
         "trial_idx": 4,
         "seed": 1248844023,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2865,7 +2865,7 @@
         "trial_idx": 5,
         "seed": 1024689542,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2874,7 +2874,7 @@
         "trial_idx": 6,
         "seed": 1262611794,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2883,7 +2883,7 @@
         "trial_idx": 7,
         "seed": 362599694,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2892,7 +2892,7 @@
         "trial_idx": 8,
         "seed": 266665321,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2901,7 +2901,7 @@
         "trial_idx": 9,
         "seed": 1146707565,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2910,7 +2910,7 @@
         "trial_idx": 10,
         "seed": 1211918958,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2919,7 +2919,7 @@
         "trial_idx": 11,
         "seed": 914466992,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2928,7 +2928,7 @@
         "trial_idx": 12,
         "seed": 1501800954,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2937,7 +2937,7 @@
         "trial_idx": 13,
         "seed": 350103392,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2946,7 +2946,7 @@
         "trial_idx": 14,
         "seed": 959883462,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2955,7 +2955,7 @@
         "trial_idx": 15,
         "seed": 356219371,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2964,7 +2964,7 @@
         "trial_idx": 16,
         "seed": 893996554,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2973,7 +2973,7 @@
         "trial_idx": 17,
         "seed": 554373265,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2982,7 +2982,7 @@
         "trial_idx": 18,
         "seed": 1517788888,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -2991,7 +2991,7 @@
         "trial_idx": 19,
         "seed": 2025273724,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3000,7 +3000,7 @@
         "trial_idx": 20,
         "seed": 1506047924,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3009,7 +3009,7 @@
         "trial_idx": 21,
         "seed": 2119151771,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3018,7 +3018,7 @@
         "trial_idx": 22,
         "seed": 256588160,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3027,7 +3027,7 @@
         "trial_idx": 23,
         "seed": 1511112119,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3036,7 +3036,7 @@
         "trial_idx": 24,
         "seed": 618892199,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3045,7 +3045,7 @@
         "trial_idx": 25,
         "seed": 1552968720,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3054,7 +3054,7 @@
         "trial_idx": 26,
         "seed": 1066920603,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3063,7 +3063,7 @@
         "trial_idx": 27,
         "seed": 1573027063,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3072,7 +3072,7 @@
         "trial_idx": 28,
         "seed": 251207300,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3081,7 +3081,7 @@
         "trial_idx": 29,
         "seed": 1111098415,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3090,7 +3090,7 @@
         "trial_idx": 30,
         "seed": 873636115,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3099,7 +3099,7 @@
         "trial_idx": 31,
         "seed": 381020095,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3108,7 +3108,7 @@
         "trial_idx": 32,
         "seed": 456038052,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3117,7 +3117,7 @@
         "trial_idx": 33,
         "seed": 1884730878,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3126,7 +3126,7 @@
         "trial_idx": 34,
         "seed": 1413668946,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3135,7 +3135,7 @@
         "trial_idx": 35,
         "seed": 1890623892,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3144,7 +3144,7 @@
         "trial_idx": 36,
         "seed": 1316924058,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3153,7 +3153,7 @@
         "trial_idx": 37,
         "seed": 1523713849,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3162,7 +3162,7 @@
         "trial_idx": 38,
         "seed": 1898326208,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3171,7 +3171,7 @@
         "trial_idx": 39,
         "seed": 2004523099,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3180,7 +3180,7 @@
         "trial_idx": 40,
         "seed": 119587633,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3189,7 +3189,7 @@
         "trial_idx": 41,
         "seed": 2104530024,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3198,7 +3198,7 @@
         "trial_idx": 42,
         "seed": 1257243613,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3207,7 +3207,7 @@
         "trial_idx": 43,
         "seed": 1081206009,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3216,7 +3216,7 @@
         "trial_idx": 44,
         "seed": 1790094771,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3225,7 +3225,7 @@
         "trial_idx": 45,
         "seed": 1626868128,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3234,7 +3234,7 @@
         "trial_idx": 46,
         "seed": 598146074,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3243,7 +3243,7 @@
         "trial_idx": 47,
         "seed": 1324178196,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3252,7 +3252,7 @@
         "trial_idx": 48,
         "seed": 1357457714,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3261,7 +3261,7 @@
         "trial_idx": 49,
         "seed": 246722395,
         "total_vfe": 2.302585,
-        "total_efe": 19.04841,
+        "total_efe": 17.295294,
         "n_primitives": 8,
         "inferred_context": "reception",
         "belief_confidence": 1.0
@@ -3275,7 +3275,7 @@
     "n_trials": 50,
     "vfe_mean": 0.0,
     "vfe_std": 0.0,
-    "efe_mean": 4.204747,
+    "efe_mean": 3.133791,
     "efe_std": 0.0,
     "n_primitives_mean": 2.0,
     "n_primitives_std": 0.0,
@@ -3287,7 +3287,7 @@
         "trial_idx": 0,
         "seed": 93929840,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3296,7 +3296,7 @@
         "trial_idx": 1,
         "seed": 678580094,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3305,7 +3305,7 @@
         "trial_idx": 2,
         "seed": 1549464332,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3314,7 +3314,7 @@
         "trial_idx": 3,
         "seed": 145457437,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3323,7 +3323,7 @@
         "trial_idx": 4,
         "seed": 1616432773,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3332,7 +3332,7 @@
         "trial_idx": 5,
         "seed": 1904541352,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3341,7 +3341,7 @@
         "trial_idx": 6,
         "seed": 810574663,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3350,7 +3350,7 @@
         "trial_idx": 7,
         "seed": 47395820,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3359,7 +3359,7 @@
         "trial_idx": 8,
         "seed": 1498026503,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3368,7 +3368,7 @@
         "trial_idx": 9,
         "seed": 1153814409,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3377,7 +3377,7 @@
         "trial_idx": 10,
         "seed": 1613526910,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3386,7 +3386,7 @@
         "trial_idx": 11,
         "seed": 381419094,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3395,7 +3395,7 @@
         "trial_idx": 12,
         "seed": 858316105,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3404,7 +3404,7 @@
         "trial_idx": 13,
         "seed": 315669164,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3413,7 +3413,7 @@
         "trial_idx": 14,
         "seed": 216152924,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3422,7 +3422,7 @@
         "trial_idx": 15,
         "seed": 356148309,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3431,7 +3431,7 @@
         "trial_idx": 16,
         "seed": 1096941265,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3440,7 +3440,7 @@
         "trial_idx": 17,
         "seed": 1883244329,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3449,7 +3449,7 @@
         "trial_idx": 18,
         "seed": 453265976,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3458,7 +3458,7 @@
         "trial_idx": 19,
         "seed": 1061866509,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3467,7 +3467,7 @@
         "trial_idx": 20,
         "seed": 1396572666,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3476,7 +3476,7 @@
         "trial_idx": 21,
         "seed": 732078239,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3485,7 +3485,7 @@
         "trial_idx": 22,
         "seed": 8429317,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3494,7 +3494,7 @@
         "trial_idx": 23,
         "seed": 2145786762,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3503,7 +3503,7 @@
         "trial_idx": 24,
         "seed": 1482034303,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3512,7 +3512,7 @@
         "trial_idx": 25,
         "seed": 1172472160,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3521,7 +3521,7 @@
         "trial_idx": 26,
         "seed": 717185555,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3530,7 +3530,7 @@
         "trial_idx": 27,
         "seed": 651398632,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3539,7 +3539,7 @@
         "trial_idx": 28,
         "seed": 672345614,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3548,7 +3548,7 @@
         "trial_idx": 29,
         "seed": 795968466,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3557,7 +3557,7 @@
         "trial_idx": 30,
         "seed": 1306675425,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3566,7 +3566,7 @@
         "trial_idx": 31,
         "seed": 1494362741,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3575,7 +3575,7 @@
         "trial_idx": 32,
         "seed": 1631225450,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3584,7 +3584,7 @@
         "trial_idx": 33,
         "seed": 258227539,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3593,7 +3593,7 @@
         "trial_idx": 34,
         "seed": 685281260,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3602,7 +3602,7 @@
         "trial_idx": 35,
         "seed": 1628267603,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3611,7 +3611,7 @@
         "trial_idx": 36,
         "seed": 1460902892,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3620,7 +3620,7 @@
         "trial_idx": 37,
         "seed": 1897876484,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3629,7 +3629,7 @@
         "trial_idx": 38,
         "seed": 275775922,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3638,7 +3638,7 @@
         "trial_idx": 39,
         "seed": 1020336364,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3647,7 +3647,7 @@
         "trial_idx": 40,
         "seed": 465781328,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3656,7 +3656,7 @@
         "trial_idx": 41,
         "seed": 939104703,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3665,7 +3665,7 @@
         "trial_idx": 42,
         "seed": 1641166657,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3674,7 +3674,7 @@
         "trial_idx": 43,
         "seed": 307336635,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3683,7 +3683,7 @@
         "trial_idx": 44,
         "seed": 1089234113,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3692,7 +3692,7 @@
         "trial_idx": 45,
         "seed": 907832087,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3701,7 +3701,7 @@
         "trial_idx": 46,
         "seed": 82587740,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3710,7 +3710,7 @@
         "trial_idx": 47,
         "seed": 1641561614,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3719,7 +3719,7 @@
         "trial_idx": 48,
         "seed": 1734398056,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3728,7 +3728,7 @@
         "trial_idx": 49,
         "seed": 889022348,
         "total_vfe": 0.0,
-        "total_efe": 4.204747,
+        "total_efe": 3.133791,
         "n_primitives": 2,
         "inferred_context": "corridor",
         "belief_confidence": 1.0
@@ -3742,7 +3742,7 @@
     "n_trials": 50,
     "vfe_mean": 9.21034,
     "vfe_std": 0.0,
-    "efe_mean": 20.630185,
+    "efe_mean": 17.71669,
     "efe_std": 0.0,
     "n_primitives_mean": 9.0,
     "n_primitives_std": 0.0,
@@ -3754,7 +3754,7 @@
         "trial_idx": 0,
         "seed": 186018348,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3763,7 +3763,7 @@
         "trial_idx": 1,
         "seed": 1331291618,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3772,7 +3772,7 @@
         "trial_idx": 2,
         "seed": 2145230599,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3781,7 +3781,7 @@
         "trial_idx": 3,
         "seed": 94015719,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3790,7 +3790,7 @@
         "trial_idx": 4,
         "seed": 833728940,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3799,7 +3799,7 @@
         "trial_idx": 5,
         "seed": 471856647,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3808,7 +3808,7 @@
         "trial_idx": 6,
         "seed": 2057043603,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3817,7 +3817,7 @@
         "trial_idx": 7,
         "seed": 437718830,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3826,7 +3826,7 @@
         "trial_idx": 8,
         "seed": 1880037368,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3835,7 +3835,7 @@
         "trial_idx": 9,
         "seed": 2107054053,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3844,7 +3844,7 @@
         "trial_idx": 10,
         "seed": 1712250081,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3853,7 +3853,7 @@
         "trial_idx": 11,
         "seed": 95670142,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3862,7 +3862,7 @@
         "trial_idx": 12,
         "seed": 256137499,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3871,7 +3871,7 @@
         "trial_idx": 13,
         "seed": 462392950,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3880,7 +3880,7 @@
         "trial_idx": 14,
         "seed": 2026957398,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3889,7 +3889,7 @@
         "trial_idx": 15,
         "seed": 67429341,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3898,7 +3898,7 @@
         "trial_idx": 16,
         "seed": 1403095445,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3907,7 +3907,7 @@
         "trial_idx": 17,
         "seed": 1373391495,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3916,7 +3916,7 @@
         "trial_idx": 18,
         "seed": 726894014,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3925,7 +3925,7 @@
         "trial_idx": 19,
         "seed": 1402672800,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3934,7 +3934,7 @@
         "trial_idx": 20,
         "seed": 45941346,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3943,7 +3943,7 @@
         "trial_idx": 21,
         "seed": 742001774,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3952,7 +3952,7 @@
         "trial_idx": 22,
         "seed": 1697165848,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3961,7 +3961,7 @@
         "trial_idx": 23,
         "seed": 78070747,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3970,7 +3970,7 @@
         "trial_idx": 24,
         "seed": 1330970712,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3979,7 +3979,7 @@
         "trial_idx": 25,
         "seed": 934177815,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3988,7 +3988,7 @@
         "trial_idx": 26,
         "seed": 1924225310,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -3997,7 +3997,7 @@
         "trial_idx": 27,
         "seed": 367925439,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4006,7 +4006,7 @@
         "trial_idx": 28,
         "seed": 2036234694,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4015,7 +4015,7 @@
         "trial_idx": 29,
         "seed": 916383317,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4024,7 +4024,7 @@
         "trial_idx": 30,
         "seed": 1322568771,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4033,7 +4033,7 @@
         "trial_idx": 31,
         "seed": 800603921,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4042,7 +4042,7 @@
         "trial_idx": 32,
         "seed": 1595064517,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4051,7 +4051,7 @@
         "trial_idx": 33,
         "seed": 474779292,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4060,7 +4060,7 @@
         "trial_idx": 34,
         "seed": 1504378055,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4069,7 +4069,7 @@
         "trial_idx": 35,
         "seed": 1807410166,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4078,7 +4078,7 @@
         "trial_idx": 36,
         "seed": 1200135566,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4087,7 +4087,7 @@
         "trial_idx": 37,
         "seed": 1487379493,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4096,7 +4096,7 @@
         "trial_idx": 38,
         "seed": 1034869655,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4105,7 +4105,7 @@
         "trial_idx": 39,
         "seed": 1010702856,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4114,7 +4114,7 @@
         "trial_idx": 40,
         "seed": 999774970,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4123,7 +4123,7 @@
         "trial_idx": 41,
         "seed": 858317674,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4132,7 +4132,7 @@
         "trial_idx": 42,
         "seed": 1882566282,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4141,7 +4141,7 @@
         "trial_idx": 43,
         "seed": 234161373,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4150,7 +4150,7 @@
         "trial_idx": 44,
         "seed": 2065354023,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4159,7 +4159,7 @@
         "trial_idx": 45,
         "seed": 1295015428,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4168,7 +4168,7 @@
         "trial_idx": 46,
         "seed": 646537543,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4177,7 +4177,7 @@
         "trial_idx": 47,
         "seed": 1082658066,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4186,7 +4186,7 @@
         "trial_idx": 48,
         "seed": 1224060985,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
@@ -4195,7 +4195,7 @@
         "trial_idx": 49,
         "seed": 1944291034,
         "total_vfe": 9.21034,
-        "total_efe": 20.630185,
+        "total_efe": 17.71669,
         "n_primitives": 9,
         "inferred_context": "hospital",
         "belief_confidence": 1.0
