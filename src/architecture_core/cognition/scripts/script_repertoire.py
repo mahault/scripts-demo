@@ -50,6 +50,7 @@ class ScriptRepertoire:
         library: PrimitiveLibrary,
         config: Optional[RepertoireConfig] = None,
         initial_patterns: Optional[List[ScriptPattern]] = None,
+        affinity_learner: Optional[object] = None,
     ) -> None:
         self._library = library
         self._config = config or RepertoireConfig()
@@ -66,6 +67,8 @@ class ScriptRepertoire:
         # Compositional mode: None = disabled (old behaviour), dict = enabled
         self._pattern_graph: Optional[Dict[str, Dict[str, float]]] = None
         self._pattern_graph_size: int = 0
+        # Optional affinity learner for D-matrix updates
+        self._affinity_learner = affinity_learner
 
         if initial_patterns:
             for p in initial_patterns:
@@ -589,6 +592,24 @@ class ScriptRepertoire:
                         )
                     else:
                         pattern.norm_features[key] = value
+
+        # Hook: accumulate D-matrix evidence via affinity learner if available
+        # Uses Dirichlet concentration update: d_fc += evidence(FE, accuracy)
+        if self._affinity_learner is not None:
+            context = trajectory.situation if hasattr(trajectory, "situation") else ""
+            if not context and steps:
+                context = steps[0].most_likely_situation
+            if context:
+                self._affinity_learner.update(
+                    fragment=pattern_name,
+                    context=context,
+                    prediction_error=fe,
+                    accuracy=trajectory.success_rate,
+                )
+                # Apply posterior affinity back to pattern
+                learned_aff = self._affinity_learner.get_situation_affinity(pattern_name)
+                if learned_aff:
+                    pattern.situation_affinity.update(learned_aff)
 
     def _check_consolidation(self, pattern_name: str) -> bool:
         """Check if a pattern should be promoted to strong.

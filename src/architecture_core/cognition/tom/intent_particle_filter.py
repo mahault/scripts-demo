@@ -186,12 +186,13 @@ class IntentParticleFilter:
         n_particles: int = 100,
         resample_threshold: float = 0.5,
         jitter_std: float = 0.1,
+        seed: Optional[int] = 42,
     ) -> None:
         self._n = n_particles
         self._resample_threshold = resample_threshold
         self._jitter_std = jitter_std
         self._effective_jitter = jitter_std  # modulated by arousal
-        self._rng = np.random.default_rng(42)
+        self._rng = np.random.default_rng(seed)
 
         # Initialize particles from priors
         self._profiles: List[IntentProfile] = []

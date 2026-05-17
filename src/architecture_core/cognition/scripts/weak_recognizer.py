@@ -19,6 +19,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
+
 from architecture_core.core.types import PerceptBundle
 from architecture_core.cognition.scripts.script_types import SituationType
 
@@ -56,11 +58,27 @@ class WeakScriptRecognizer:
         situation_types: List[SituationType],
         prior: Optional[Dict[str, float]] = None,
         temperature: float = 1.0,
+        sensory_precision: Optional[float] = None,
+        noise_std: float = 0.0,
+        seed: Optional[int] = None,
     ) -> None:
         if not situation_types:
             raise ValueError("At least one SituationType required")
         self._types = {st.name: st for st in situation_types}
         self._temperature = max(temperature, 1e-6)
+        self._rng = np.random.default_rng(seed)
+
+        # Sensory precision: pi = 1/sigma^2
+        # Controls how much the likelihood (features) contributes relative
+        # to the prior. High precision = observations dominate inference.
+        # Low precision = prior dominates (uncertain/noisy observations).
+        # For backward compat: noise_std > 0 sets precision = 1/noise_std^2
+        if sensory_precision is not None:
+            self._sensory_precision = max(sensory_precision, 0.01)
+        elif noise_std > 0:
+            self._sensory_precision = 1.0 / (noise_std ** 2)
+        else:
+            self._sensory_precision = None  # infinite precision (deterministic)
 
         # Uniform prior if not provided
         if prior is not None:
@@ -85,15 +103,36 @@ class WeakScriptRecognizer:
         """
         features = self._extract_features(pb)
 
-        # Compute log-evidence for each type: dot(weights, features) + log(prior)
+        # Compute log-posterior for each type:
+        #   ln q(s|o) ∝ pi * ln P(o|s) + ln P(s)
+        #
+        # where pi is the sensory precision. When pi is high (precise
+        # observations), the likelihood dominates. When pi is low (noisy
+        # observations), the prior dominates — this IS the active inference
+        # formulation of sensory uncertainty.
+        #
+        # The log-likelihood for each state is the dot product of feature
+        # weights with observations (equivalent to Gaussian generative model
+        # with precision-weighted means as weights).
         logits: Dict[str, float] = {}
         for name, st in self._types.items():
-            score = sum(
+            # Log-likelihood: sum_f w_sf * o_f
+            log_likelihood = sum(
                 st.feature_weights.get(f, 0.0) * v
                 for f, v in features.items()
             )
+
+            # Scale likelihood by sensory precision (if finite)
+            # pi * ln P(o|s) + ln P(s)
+            if self._sensory_precision is not None:
+                # Precision-weighted likelihood
+                scaled_ll = self._sensory_precision * log_likelihood / self._temperature
+            else:
+                # Infinite precision (deterministic case, backward compatible)
+                scaled_ll = log_likelihood / self._temperature
+
             log_prior = math.log(max(self._prior.get(name, 1e-8), 1e-8))
-            logits[name] = score / self._temperature + log_prior
+            logits[name] = scaled_ll + log_prior
 
         # Softmax
         distribution = _softmax(logits)
@@ -138,9 +177,40 @@ class WeakScriptRecognizer:
             return 10.0  # cap at high surprise
         return -math.log(q)
 
+    def set_weights(self, situation_name: str, weights: Dict[str, float]) -> None:
+        """Dynamically update feature weights for a situation type.
+
+        Used by RecognizerLearner to inject learned weights into
+        an existing recognizer without reconstructing it.
+
+        Parameters
+        ----------
+        situation_name : str
+            Name of the situation type to update.
+        weights : dict[str, float]
+            New feature weight vector.
+        """
+        if situation_name not in self._types:
+            raise ValueError(f"Unknown situation type: {situation_name}")
+        self._types[situation_name] = SituationType(
+            name=situation_name,
+            feature_weights=dict(weights),
+        )
+
+    def get_weights(self) -> Dict[str, Dict[str, float]]:
+        """Return current feature weights for all situation types."""
+        return {name: dict(st.feature_weights) for name, st in self._types.items()}
+
     # ------------------------------------------------------------------
     def _extract_features(self, pb: PerceptBundle) -> Dict[str, float]:
-        """Pull numeric features from PerceptBundle sections."""
+        """Pull numeric features from PerceptBundle sections.
+
+        Features are extracted without corruption. Sensory uncertainty
+        is modeled via the precision parameter on the likelihood in
+        recognize(), not by corrupting the observations themselves.
+        This follows the active inference formulation where precision
+        scales the log-likelihood contribution, not the data.
+        """
         features: Dict[str, float] = {}
 
         # World-level features
@@ -205,6 +275,12 @@ class WeakScriptRecognizer:
         features["cue_queue_here"] = 1.0 if "queue_here" in cue_types else 0.0
         features["cue_staff_only"] = 1.0 if "staff_only" in cue_types else 0.0
         features["cue_quiet_zone"] = 1.0 if "quiet_zone" in cue_types else 0.0
+
+        # Constant feature for bias terms in learned discriminant functions.
+        # When using a generative Gaussian model converted to linear weights,
+        # the normalizing constant (which differs across classes) must be
+        # included as a bias weight on this constant feature.
+        features["_bias"] = 1.0
 
         return features
 

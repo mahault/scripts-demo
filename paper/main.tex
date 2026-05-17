@@ -266,6 +266,15 @@ The fourth stage is backbone extraction.  The causal sequence is derived by find
 
 The fifth and final stage is policy selection via softmax over negative expected free energy (\cref{eq:policy-selection}).  In our experiments, because the pipeline is deterministic and produces a single composed sequence per condition, selection is applied at the primitive level during greedy scoring within backbone extraction.
 
+\Cref{fig:pipeline} provides a schematic overview of the full pipeline, showing how the $\A$, $\B$, $\C$, and $\D$ matrices connect to each composition stage.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/fig_pipeline_overview.pdf}
+  \caption{Compositional assembly pipeline.  Stage 0 ($\A$-matrix recognition) infers the situation type from percepts; stages 1--5 score, propagate, compose, extract, and select the policy.  The generative model (left) supplies the four matrices.  Context (bottom) shapes the $\C$-matrix preferences.}
+  \label{fig:pipeline}
+\end{figure}
+
 \subsection{Free Energy of Transitions}
 
 The variational free energy of a single transition under the $\B$-matrix is

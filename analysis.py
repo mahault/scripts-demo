@@ -43,6 +43,14 @@ import pandas as pd
 # ================================================================
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "experiment_results")
 FIG_DIR = os.path.join(RESULTS_DIR, "figures")
+PAPER_FIG_DIR = os.path.join(os.path.dirname(__file__), "paper", "figures")
+
+
+def _save_fig(fig, filename: str):
+    """Save figure to both experiment_results/figures/ and paper/figures/."""
+    fig.savefig(os.path.join(FIG_DIR, filename))
+    if os.path.isdir(PAPER_FIG_DIR):
+        fig.savefig(os.path.join(PAPER_FIG_DIR, filename))
 
 CONTEXT_COLORS = {
     "reception": "#2196F3",
@@ -215,14 +223,14 @@ def fig_exp1_cue_primitive_heatmap(df: pd.DataFrame):
                     ax.text(pi, ci, f"{val:.2f}", ha="center", va="center",
                             fontsize=6, color=color, fontweight="bold")
 
-    cbar = fig.colorbar(im, ax=axes.tolist(), shrink=0.8, pad=0.02)
+    cbar = fig.colorbar(im, ax=axes.tolist(), shrink=0.8, pad=0.05)
     cbar.set_label("Differential inclusion rate\n(cue present $-$ cue absent)", fontsize=9)
 
     fig.suptitle("Material Cue $\\rightarrow$ Primitive Mapping by Context\n"
                  "(D-matrix gating: same cues, different active fragments per environment)",
                  fontsize=11)
-    fig.tight_layout(rect=[0, 0, 0.92, 0.88])
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp1_cue_primitive_heatmap.pdf"))
+    fig.tight_layout(rect=[0, 0, 0.88, 0.88])
+    _save_fig(fig, "fig_exp1_cue_primitive_heatmap.pdf")
     plt.close(fig)
     print("  [1/17] fig_exp1_cue_primitive_heatmap.pdf")
 
@@ -279,7 +287,7 @@ def fig_exp1_n_primitives_by_cues(df: pd.DataFrame):
 
     fig.suptitle("Structural and Evaluative Divergence by Material Cue Count", fontsize=12, y=1.02)
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp1_n_primitives_by_cues.pdf"))
+    _save_fig(fig, "fig_exp1_n_primitives_by_cues.pdf")
     plt.close(fig)
     print("  [2/17] fig_exp1_n_primitives_by_cues.pdf")
 
@@ -346,14 +354,14 @@ def fig_exp1_free_energy_landscape(df: pd.DataFrame):
                 ax.text(c, r, f"{grid[r,c]:.1f}", ha="center", va="center", fontsize=7)
 
     # Place colorbar to the right of the last panel, not overlapping
-    cbar = fig.colorbar(im, ax=axes.tolist(), shrink=0.7, pad=0.03)
+    cbar = fig.colorbar(im, ax=axes.tolist(), shrink=0.7, pad=0.05)
     cbar.set_label("Total EFE $\\mathcal{G}(\\pi)$", fontsize=10)
 
     fig.suptitle("Expected Free Energy Landscape\n"
                  "(Same B-matrix structure, different C-matrix evaluation)",
                  fontsize=12)
-    fig.tight_layout(rect=[0, 0, 0.92, 0.90])
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp1_free_energy_landscape.pdf"))
+    fig.tight_layout(rect=[0, 0, 0.88, 0.90])
+    _save_fig(fig, "fig_exp1_free_energy_landscape.pdf")
     plt.close(fig)
     print("  [3/17] fig_exp1_free_energy_landscape.pdf")
 
@@ -397,7 +405,7 @@ def fig_exp1_backbone_by_context(df: pd.DataFrame):
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp1_backbone_by_context.pdf"))
+    _save_fig(fig, "fig_exp1_backbone_by_context.pdf")
     plt.close(fig)
     print("  [4/17] fig_exp1_backbone_by_context.pdf")
 
@@ -430,7 +438,7 @@ def fig_exp1_anova_interaction(df: pd.DataFrame):
     ax.legend()
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp1_anova_interaction.pdf"))
+    _save_fig(fig, "fig_exp1_anova_interaction.pdf")
     plt.close(fig)
     print("  [5/17] fig_exp1_anova_interaction.pdf")
 
@@ -505,7 +513,7 @@ def fig_exp2_degradation_curves(df: pd.DataFrame):
     fig.suptitle("Graceful Degradation Under Model Sparsity: Structure and Evaluation",
                  fontsize=12, y=1.02)
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp2_degradation_curves.pdf"))
+    _save_fig(fig, "fig_exp2_degradation_curves.pdf")
     plt.close(fig)
     print("  [6/17] fig_exp2_degradation_curves.pdf")
 
@@ -560,7 +568,7 @@ def fig_exp2_subset_violations(df: pd.DataFrame):
     ax.grid(alpha=0.3)
     ax.set_xticks(range(1, 7))
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp2_subset_violations.pdf"))
+    _save_fig(fig, "fig_exp2_subset_violations.pdf")
     plt.close(fig)
     print("  [7/17] fig_exp2_subset_violations.pdf")
 
@@ -595,7 +603,7 @@ def fig_exp2_free_energy_vs_fragments(df: pd.DataFrame):
     ax.grid(alpha=0.3)
     ax.set_xticks(range(1, 7))
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp2_free_energy_vs_fragments.pdf"))
+    _save_fig(fig, "fig_exp2_free_energy_vs_fragments.pdf")
     plt.close(fig)
     print("  [8/17] fig_exp2_free_energy_vs_fragments.pdf")
 
@@ -643,7 +651,7 @@ def fig_exp2_topology_density(df: pd.DataFrame):
     ax.grid(alpha=0.3)
     ax.set_xticks(range(1, 7))
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp2_topology_density.pdf"))
+    _save_fig(fig, "fig_exp2_topology_density.pdf")
     plt.close(fig)
     print("  [9/17] fig_exp2_topology_density.pdf")
 
@@ -757,7 +765,7 @@ def fig_exp3_behavioral_divergence(df: pd.DataFrame):
     fig.suptitle("Behavioral Divergence: Same Knowledge Base, Different Environments",
                  fontsize=12)
     fig.tight_layout(rect=[0, 0, 1, 0.92])
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp3_behavioral_divergence.pdf"))
+    _save_fig(fig, "fig_exp3_behavioral_divergence.pdf")
     plt.close(fig)
     print("  [10/17] fig_exp3_behavioral_divergence.pdf")
 
@@ -838,7 +846,7 @@ def fig_exp3_sequence_comparison(df: pd.DataFrame):
     fig.legend(handles=handles, loc="lower center", ncol=6, fontsize=8,
                bbox_to_anchor=(0.5, -0.02))
     fig.tight_layout(rect=[0, 0.05, 1, 0.93])
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp3_sequence_comparison.pdf"))
+    _save_fig(fig, "fig_exp3_sequence_comparison.pdf")
     plt.close(fig)
     print("  [11/17] fig_exp3_sequence_comparison.pdf")
 
@@ -855,31 +863,34 @@ def fig_exp3_weight_profiles(df: pd.DataFrame):
                   "approach_service", "courtesy_space", "direct_approach"]
     n_frags = len(frag_names)
 
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(9, 8), subplot_kw=dict(polar=True))
 
     angles = np.linspace(0, 2 * np.pi, n_frags, endpoint=False).tolist()
     angles += angles[:1]
 
-    for _, row in df.iterrows():
+    # Use distinct linestyles so all contexts are visible even with similar colors
+    line_styles = ["-", "--", "-."]
+    for idx, (_, row) in enumerate(df.iterrows()):
         context = row["context"]
         ws_str = row["weighted_scores"]
         ws = json.loads(ws_str) if isinstance(ws_str, str) else {}
         values = [ws.get(f, 0.0) for f in frag_names]
         values += values[:1]
 
-        ax.plot(angles, values, "o-", linewidth=2,
+        ax.plot(angles, values, "o" + line_styles[idx % len(line_styles)],
+                linewidth=2.5, markersize=5,
                 color=CONTEXT_COLORS[context],
                 label=context.capitalize())
-        ax.fill(angles, values, alpha=0.1, color=CONTEXT_COLORS[context])
+        ax.fill(angles, values, alpha=0.08, color=CONTEXT_COLORS[context])
 
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(frag_names, fontsize=8)
     ax.set_title("Posterior Fragment Weights $Q(f|c)$\n"
                  "(D-matrix gating: filtered fragments show zero weight)",
                  fontsize=12, pad=20)
-    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
-    fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_exp3_weight_profiles.pdf"))
+    ax.legend(loc="upper left", bbox_to_anchor=(-0.15, 1.15), framealpha=0.9)
+    fig.tight_layout(rect=[0.05, 0, 0.95, 0.95])
+    _save_fig(fig, "fig_exp3_weight_profiles.pdf")
     plt.close(fig)
     print("  [12/17] fig_exp3_weight_profiles.pdf")
 
@@ -948,7 +959,7 @@ def fig_context_effect_sizes(df_all: pd.DataFrame):
     ax.legend(handles=handles, loc="lower right")
     ax.grid(axis="x", alpha=0.3)
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_context_effect_sizes.pdf"))
+    _save_fig(fig, "fig_context_effect_sizes.pdf")
     plt.close(fig)
     print("  [13/17] fig_context_effect_sizes.pdf")
 
@@ -961,17 +972,17 @@ def fig_pipeline_overview():
 
     Shows A, B, C, D matrices and their role in composition.
     """
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(14, 9))
     ax.set_xlim(0, 14)
-    ax.set_ylim(0, 8)
+    ax.set_ylim(0, 9)
     ax.set_aspect("equal")
     ax.axis("off")
 
-    ax.text(7, 7.6, "Compositional Assembly Pipeline", fontsize=14,
+    ax.text(7, 8.5, "Compositional Assembly Pipeline", fontsize=14,
             ha="center", fontweight="bold")
 
     # Generative Model (left)
-    gm_x, gm_y = 1.5, 5.5
+    gm_x, gm_y = 1.5, 6.0
     gm = FancyBboxPatch((gm_x - 1.3, gm_y - 1.0), 2.6, 2.0,
                          boxstyle="round,pad=0.1",
                          facecolor="#E3F2FD", edgecolor="#1565C0", linewidth=2)
@@ -988,7 +999,7 @@ def fig_pipeline_overview():
             fontsize=8, ha="center", color="#666")
 
     # Matrix boxes
-    mat_y = 3.0
+    mat_y = 3.5
     matrices = [
         ("A", "P(o|s)", "Obs.\nlikelihood", "#E8F5E9", "#2E7D32", 0.5),
         ("B", "P(s'|s,$\\pi$)", "Transition\nmodel", "#FFF3E0", "#E65100", 3.0),
@@ -1008,12 +1019,12 @@ def fig_pipeline_overview():
 
     # Pipeline stages (right) — now includes A-matrix stage
     stages = [
-        ("0. A-matrix\nRecognition", "WeakScriptRecognizer", 10.0, 7.0),
-        ("1. D-matrix\nScoring", "$w_f = aff \\cdot prec$", 10.0, 6.0),
-        ("2. Belief\nPropagation", "Graph diffusion", 10.0, 5.0),
-        ("3. B-matrix\nConstruction", "compose_from_patterns()", 10.0, 4.0),
-        ("4. Backbone\nExtraction", "Causal sequence", 10.0, 3.0),
-        ("5. Policy\nSelection", "$\\sigma(-\\gamma \\cdot G(\\pi))$", 10.0, 2.0),
+        ("0. A-matrix\nRecognition", "WeakScriptRecognizer", 10.0, 7.5),
+        ("1. D-matrix\nScoring", "$w_f = aff \\cdot prec$", 10.0, 6.5),
+        ("2. Belief\nPropagation", "Graph diffusion", 10.0, 5.5),
+        ("3. B-matrix\nConstruction", "compose_from_patterns()", 10.0, 4.5),
+        ("4. Backbone\nExtraction", "Causal sequence", 10.0, 3.5),
+        ("5. Policy\nSelection", "$\\sigma(-\\gamma \\cdot G(\\pi))$", 10.0, 2.5),
     ]
 
     for label, formula, sx, sy in stages:
@@ -1043,10 +1054,10 @@ def fig_pipeline_overview():
     ax.annotate("", xy=(7, 1.4), xytext=(5.5, mat_y - 0.6),
                 arrowprops=dict(arrowstyle="->", color="#C62828", lw=1.5, ls="--"))
 
-    ax.annotate("", xy=(8.8, 6.5), xytext=(2.8, 5.5),
+    ax.annotate("", xy=(8.8, 7.0), xytext=(2.8, 6.0),
                 arrowprops=dict(arrowstyle="->", color="#1565C0", lw=2))
 
-    fig.savefig(os.path.join(FIG_DIR, "fig_pipeline_overview.pdf"))
+    _save_fig(fig, "fig_pipeline_overview.pdf")
     plt.close(fig)
     print("  [14/17] fig_pipeline_overview.pdf")
 
@@ -1094,7 +1105,7 @@ def fig_belief_posteriors(df: pd.DataFrame):
                  "(A-matrix: WeakScriptRecognizer infers situation from percepts)",
                  fontsize=12)
     fig.tight_layout(rect=[0, 0, 1, 0.90])
-    fig.savefig(os.path.join(FIG_DIR, "fig_belief_posteriors.pdf"))
+    _save_fig(fig, "fig_belief_posteriors.pdf")
     plt.close(fig)
     print("  [15/17] fig_belief_posteriors.pdf")
 
@@ -1159,7 +1170,7 @@ def fig_effective_vs_hardcoded_affinity(df_all: pd.DataFrame):
     ax.grid(alpha=0.2)
     ax.set_aspect("equal")
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_effective_vs_hardcoded_affinity.pdf"))
+    _save_fig(fig, "fig_effective_vs_hardcoded_affinity.pdf")
     plt.close(fig)
     print("  [16/17] fig_effective_vs_hardcoded_affinity.pdf")
 
@@ -1195,7 +1206,7 @@ def fig_belief_entropy_vs_efe(df_all: pd.DataFrame):
     ax.legend()
     ax.grid(alpha=0.3)
     fig.tight_layout()
-    fig.savefig(os.path.join(FIG_DIR, "fig_belief_entropy_vs_efe.pdf"))
+    _save_fig(fig, "fig_belief_entropy_vs_efe.pdf")
     plt.close(fig)
     print("  [17/17] fig_belief_entropy_vs_efe.pdf")
 

@@ -66,11 +66,12 @@ class ScriptParticleFilter:
         patterns: Dict[str, ScriptPattern],
         n_particles: int = 50,
         resample_threshold: float = 0.5,
+        seed: Optional[int] = 42,
     ) -> None:
         self._patterns = patterns
         self._n = n_particles
         self._resample_threshold = resample_threshold
-        self._rng = np.random.default_rng(42)
+        self._rng = np.random.default_rng(seed)
         self._particles: List[TrajectoryParticle] = []
         self._trajectory_fe: float = 0.0
         self._initialized = False
