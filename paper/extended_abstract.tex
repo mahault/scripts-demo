@@ -32,31 +32,31 @@
 
 \section{Motivation}
 
-Stanchions in a reception area make queuing the free-energy-minimizing policy. The same stanchions in a corridor have no such effect---the corridor context suppresses the queuing script entirely. The behavioral difference between environments is structural, not merely evaluative: some actions become categorically unavailable. We take this observation as a design principle. Can a material environment parameterize a robot's generative model such that context determines which scripts are assembled?
+Stanchions in a reception area make queuing the free-energy-minimizing policy. The same stanchions in a corridor do nothing, because the corridor context suppresses the queuing script. The difference is not evaluative. It is structural: some actions become unavailable.
 
-We formalize this within active inference \citep{parr2022active,friston2017active} and the variational approach to scripts \citep{albarracin2021variational}. The theoretical basis draws on Latour's inscription of behavioral programs in material artifacts \citep{latour1992missing} and the embedded normativity framework \citep{guenincarlut2023embedded}: norms are not internal rules but constraints distributed across agent and environment.
+We ask whether a material environment can parameterize a robot's generative model so that context determines which scripts are assembled. The question is grounded in active inference \citep{parr2022active,friston2017active}, the variational script formalism \citep{albarracin2021variational}, Latour's analysis of behavioral programs inscribed in artifacts \citep{latour1992missing}, and the embedded normativity framework \citep{guenincarlut2023embedded}.
 
 \section{Architecture}
 
-The generative model is parameterized by four matrices. The $\mathbf{A}$-matrix (observation likelihood) drives perceptual inference over context from material cues---queue signs, social density, spatial layout. The $\mathbf{B}$-matrix (transition model) emerges from composing fragment-level primitives into a context-dependent topology. The $\mathbf{C}$-matrix encodes context-specific preferences over outcomes. The $\mathbf{D}$-matrix encodes prior beliefs over fragment--context associations.
+The generative model has four matrices. $\mathbf{A}$ (observation likelihood) is a perceptual recognizer inferring context from queue signs, social density, and spatial layout. $\mathbf{B}$ (transition model) is assembled by composing fragment-level primitives into a topology. $\mathbf{C}$ encodes preferences over outcomes, specified per context. $\mathbf{D}$ encodes prior beliefs about which fragments belong to which contexts.
 
-Fragment activation is governed by a precision-gated sigmoid:
+Fragment activation follows a precision-gated sigmoid:
 \begin{equation}
   P(\text{activate } f \mid c) = \sigma\bigl(\gamma_c \cdot (E[D(f,c)] - \tfrac{1}{K})\bigr)
 \end{equation}
-The precision $\gamma_c$ varies with context. Environments with clear affordances (reception: $\gamma = 6$) yield sharp, decisive gating. Environments with transient or ambiguous cues (corridor: $\gamma = 3$) yield flatter gating, allowing more fragments through. Under stochastic evaluation, each fragment is sampled from Bernoulli($P$)---a direct realization of action selection under uncertainty in the active inference formalism.
+The precision $\gamma_c$ varies across environments. A reception desk ($\gamma = 6$) has clear affordances and produces sharp gating. A corridor ($\gamma = 3$) has ambiguous cues and produces flatter gating, admitting more fragments. Under stochastic evaluation, fragments are sampled from Bernoulli($P$): action selection under uncertainty in the standard active inference sense.
 
-The $\mathbf{C}$-matrix encodes opposing goal structures. Reception assigns $C_{\text{interaction}} = 0.99$ and $C_{\text{scene\_assessed}} = 0.20$. Corridor assigns $C_{\text{scene\_assessed}} = 0.99$ and $C_{\text{interaction}} = 0.02$. Hospital assigns $C_{\text{ready\_for\_service}} = 0.99$ and $C_{\text{interaction}} = 0.08$. The risk component of EFE, $-\ln C(o_\tau)$, therefore penalizes contextually inappropriate outcomes by up to 3.9 nats per primitive.
+The $\mathbf{C}$-matrix differs across contexts. Reception: $C_{\text{interaction}} = 0.99$, $C_{\text{scene\_assessed}} = 0.20$. Corridor: $C_{\text{scene\_assessed}} = 0.99$, $C_{\text{interaction}} = 0.02$. Hospital: $C_{\text{ready\_for\_service}} = 0.99$, $C_{\text{interaction}} = 0.08$. The risk term of EFE is $-\ln C(o_\tau)$, so contextually wrong outcomes cost up to 3.9 nats per primitive.
 
 \subsection*{Learning}
 
-Fragment affinities are learned via Dirichlet concentration accumulation rather than hand-specified. For each fragment in each context, the system measures the marginal EFE contribution by ablation (removing the fragment and measuring the difference). Per-fragment centering isolates the cross-context differential signal. The evidence scale $F_0$ is set by empirical Bayes (median cross-context SD). The $\mathbf{A}$-matrix recognizer is trained by variational free energy minimization over labeled percepts (30 epochs, sufficient statistics accumulation).
+Fragment affinities are learned from synthetic episodes by Dirichlet concentration accumulation. For each fragment in each context, ablation measures the marginal EFE contribution. Per-fragment centering isolates cross-context signal. The evidence scale $F_0$ is set by empirical Bayes to the median cross-context SD. The $\mathbf{A}$-matrix recognizer is trained by VFE minimization over labeled percepts (30 epochs).
 
 \section{Experiments}
 
-We evaluate using 240 conditions $\times$ 30 trials each (7,200 total). Each trial applies context-appropriate sensory noise ($\sigma = 0.05$, $0.10$, $0.20$ for reception, hospital, corridor) and Bernoulli gating from the precision-weighted sigmoid. All variance is endogenous---no post-hoc jitter is added.
+240 conditions $\times$ 30 trials $=$ 7,200 total. Each trial uses sensory noise matched to context ($\sigma = 0.05$, $0.10$, $0.20$ for reception, hospital, corridor) and Bernoulli gating from the sigmoid. No post-hoc jitter is added.
 
-\paragraph{Environment shapes policy evaluation.} Context produces a large main effect on expected free energy: $F(2, 7197) = 279.2$, $p < 10^{-100}$, $\eta^2 = 0.072$ (Table~\ref{tab:anova}). When all six fragments are available, the reception--corridor separation reaches $d = 0.91$.
+\paragraph{Main effect.} Context shapes policy evaluation: $F(2, 7197) = 279.2$, $p < 10^{-100}$, $\eta^2 = 0.072$ (Table~\ref{tab:anova}). With all six fragments available, reception vs.\ corridor gives $d = 0.91$.
 
 \begin{table}[t]
 \centering
@@ -72,43 +72,43 @@ Hospital & 8.72 & 6.01 & [3.06, 23.55] & 2400 \\
 \multicolumn{5}{l}{$F(2, 7197) = 279.2$, $p \approx 10^{-122}$, $\eta^2 = 0.072$} \\
 \bottomrule
 \end{tabular}
-\caption{Per-context EFE from 7,200 stochastic trials. All 240 conditions show non-zero within-condition SD (mean 5.32 nats), confirming endogenous variability.}
+\caption{Per-context EFE (7,200 stochastic trials). Within-condition SD averages 5.32 nats across all 240 conditions.}
 \label{tab:anova}
 \end{table}
 
-\paragraph{Effect size scales with model richness.} At $k = 5$--$6$ fragments (where gating has discriminative room), reception--corridor $d = 0.87$--$0.91$, corridor--hospital $d = 0.53$--$0.73$. At $k = 1$--$2$ (where gating has little to differentiate), $d \approx 0.1$. The scaling is predicted: a richer generative model offers more material for the $\mathbf{D}$-matrix to filter, amplifying context sensitivity.
+\paragraph{Effect size scales with fragment count.} At $k = 5$--6, reception--corridor $d = 0.87$--$0.91$, corridor--hospital $d = 0.53$--$0.73$. At $k = 1$--2, $d \approx 0.1$. With few fragments, gating has little to differentiate. With many, the $\mathbf{D}$-matrix separates contexts.
 
-\paragraph{Exp.\ 1: Material cue factorial (48 cond.).} $2^4$ cue combinations $\times$ 3 contexts. Context modulates which cues produce effects: stanchions activate queuing in reception and hospital, not in corridor. Spearman $\rho$(cue count, policy length) $= 0.82$ in corridor, $0.53$ in reception.
+\paragraph{Exp.\ 1: Cue factorial (48 cond.).} $2^4$ material cues $\times$ 3 contexts. Stanchions activate queuing in reception, not in corridor. Spearman $\rho$(cue count, policy length) $= 0.82$ in corridor, $0.53$ in reception.
 
-\paragraph{Exp.\ 2: Fragment scaling (189 cond.).} $\binom{6}{k}$ for $k=1\ldots6$, $\times$ 3 contexts. More fragments yield longer policies ($\rho > 0.86$) with monotonically increasing EFE. Slopes differ by context because gating reduces the effective fragment count.
+\paragraph{Exp.\ 2: Scaling (189 cond.).} $\binom{6}{k}$ for $k=1\ldots6$, $\times$ 3 contexts. Policy length grows with $k$ ($\rho > 0.86$), as does EFE. Slopes differ across contexts.
 
-\paragraph{Exp.\ 3: Context transfer (3 cond.).} Six fragments in each context, identical knowledge. Reception composes 9 primitives including staff engagement. Corridor: 8 primitives, no queuing, no engagement. Hospital: 9 primitives, patient queuing, no direct approach. Jaccard distance between reception and corridor primitive sets: 0.30. KL divergence of posterior weight profiles: 1.96 nats.
+\paragraph{Exp.\ 3: Transfer (3 cond.).} Six fragments, three contexts, identical knowledge. Reception: 9 primitives, staff engagement included. Corridor: 8 primitives, no queuing, no engagement. Hospital: 9 primitives, patient queuing, no direct approach. Jaccard distance of primitive sets: 0.30. KL divergence of weight profiles: 1.96 nats.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_exp3_behavioral_divergence.pdf}
-  \caption{Identical fragment library, different environments. Left: Jaccard distance (primitive sets differ). Center: cosine distance (weight profiles diverge). Right: policy length and EFE.}
+  \caption{Same fragments, different environments. Left: Jaccard (primitive sets differ). Center: cosine (weight profiles diverge). Right: policy length and EFE.}
   \label{fig:divergence}
 \end{figure}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/fig_exp1_cue_primitive_heatmap.pdf}
-  \caption{Differential cue$\to$primitive activation by context. Corridor gates aggressively---only two of four cues produce behavioral effects. Reception admits all four.}
+  \caption{Cue$\to$primitive activation by context. Corridor gates aggressively: two of four cues have no effect. Reception admits all four.}
   \label{fig:heatmap}
 \end{figure}
 
 \section{Discussion}
 
-Environment does not bias evaluation of a fixed behavioral repertoire. It determines which scripts enter composition in the first place. The effect is large ($d > 0.8$) when the agent has enough fragment material for context to differentiate, and vanishes at $k=1$ where gating is trivial. This operationalizes Akrich's inscription \citep{akrich1992description}---artifacts specify behavior---and gives Lefebvre's thesis a quantitative realization \citep{lefebvre1991production}: change the space, change the cognition.
+Environment determines which scripts enter composition, not just how they are evaluated. The effect is large ($d > 0.8$) when the agent has enough fragments for context to differentiate. It vanishes at $k=1$, where gating is trivial. This is Akrich's inscription \citep{akrich1992description} made computational: artifacts specify behavior rather than suggest it. It is also Lefebvre \citep{lefebvre1991production} made quantitative: change the space, change the cognition.
 
-Context-dependent precision produces a natural hierarchy of behavioral certainty. Reception (high $\gamma$) yields stereotyped, low-variance sequences. Corridor (low $\gamma$) yields variable, exploratory behavior. The variance is not noise; it reflects the agent's uncertainty about which scripts the environment licenses, expressed through the Bernoulli sampling mechanism.
+Context-dependent precision produces a hierarchy of behavioral certainty. Reception ($\gamma = 6$) gives stereotyped sequences. Corridor ($\gamma = 3$) gives variable, exploratory behavior. The variance is decision uncertainty about which scripts the environment licenses, expressed through Bernoulli sampling at the gating boundary.
 
-The $\mathbf{A}$-matrix closes the perception--action loop. The robot infers context from quiet-zone signage, seated postures, and low arousal---not from a label. Recognition accuracy: 93.3\% across all conditions. Material cues shift the posterior, which reshapes the active fragment set, which changes the composed policy.
+The $\mathbf{A}$-matrix closes the perception--action loop. The robot infers context from quiet-zone signage, seated postures, low arousal. Recognition accuracy: 93.3\%. Material cues shift the context posterior, which reshapes the active set, which changes the policy.
 
-Context explains 7\% of total EFE variance ($\eta^2 = 0.072$). Condition---which fragments are available---dominates by design, since the experiment varies both. The between-context effect is reliable ($p < 10^{-100}$) and large where expected ($d = 0.91$ at $k=6$). Within-condition SD of 5.32 nats reflects real decision uncertainty at the gating boundary.
+Context explains 7\% of total EFE variance. Condition (which fragments are available) dominates by design. The between-context effect is large where expected ($d = 0.91$ at $k=6$) and small where expected ($d \approx 0.1$ at $k=1$). Within-condition SD of 5.32 nats is decision uncertainty, not noise.
 
-\paragraph{Limitations and next steps.} The simulated environments lack the perceptual richness of physical deployment. The $\mathbf{C}$-matrix is hand-specified (learning context preferences from interaction is an open problem). Hierarchical precision---tightening $\gamma_c$ as the agent accumulates experience in a context---would connect this work to meta-learning and epistemic foraging.
+\paragraph{Limitations.} Simulated environments lack perceptual richness. The $\mathbf{C}$-matrix is hand-specified; learning preferences from interaction is open. Hierarchical precision (adapting $\gamma_c$ with experience) would connect to meta-learning.
 
 \vspace{6pt}
 \noindent\textbf{Keywords:} active inference, social robotics, compositional assembly, embedded normativity, precision gating, material semiotics
