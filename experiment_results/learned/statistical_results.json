@@ -1,0 +1,86 @@
+{
+  "learned_vs_handcoded": {
+    "cohens_d": {
+      "d": -2.262489017916816,
+      "ci": [
+        -2.6271158621058723,
+        -1.9712347262745913
+      ],
+      "interpretation": "large"
+    },
+    "permutation_test": {
+      "p_value": 9.999000099990002e-05,
+      "observed_stat": -0.37662766666666636
+    }
+  },
+  "learned_hard_vs_handcoded": {
+    "cohens_d": {
+      "d": -1.1075037822542835,
+      "ci": [
+        -1.2835521905735983,
+        -0.9515211643679544
+      ],
+      "interpretation": "large"
+    }
+  },
+  "nogating_vs_handcoded": {
+    "cohens_d": {
+      "d": -0.6003330182143298,
+      "ci": [
+        -0.8302115991428347,
+        -0.38128380124366845
+      ],
+      "interpretation": "medium"
+    }
+  },
+  "learned_vs_nogating": {
+    "cohens_d": {
+      "d": -1.3262424944720745,
+      "ci": [
+        -1.644821538292669,
+        -1.0553581091369126
+      ],
+      "interpretation": "large"
+    },
+    "permutation_test": {
+      "p_value": 9.999000099990002e-05,
+      "observed_stat": -0.2448400000000004
+    }
+  },
+  "efe_rate_summary": {
+    "metric": "EFE rate (G/T) \u2014 length-independent comparison",
+    "learned_precision_gating": {
+      "mean": 2.258556,
+      "ci": [
+        2.2397324733333335,
+        2.277054822166667
+      ]
+    },
+    "learned_hard_threshold": {
+      "mean": 2.8646126666666665,
+      "ci": [
+        2.6753121600000003,
+        3.0625563733333334
+      ]
+    },
+    "handcoded": {
+      "mean": 1.8819283333333336,
+      "ci": [
+        1.8498311800000002,
+        1.9155616666666666
+      ]
+    },
+    "no_gating": {
+      "mean": 2.0137159999999996,
+      "ci": [
+        1.9771576199999996,
+        2.0521722799999997
+      ]
+    }
+  },
+  "learning_metrics": {
+    "expert_correlation": 0.4861377941829002,
+    "precision_gamma": 1.8692586031539988,
+    "precision_converged": true
+  }
+}
