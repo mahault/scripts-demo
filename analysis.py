@@ -223,13 +223,14 @@ def fig_exp1_cue_primitive_heatmap(df: pd.DataFrame):
                     ax.text(pi, ci, f"{val:.2f}", ha="center", va="center",
                             fontsize=6, color=color, fontweight="bold")
 
-    cbar = fig.colorbar(im, ax=axes.tolist(), shrink=0.8, pad=0.05)
-    cbar.set_label("Differential inclusion rate\n(cue present $-$ cue absent)", fontsize=9)
-
     fig.suptitle("Material Cue $\\rightarrow$ Primitive Mapping by Context\n"
                  "(D-matrix gating: same cues, different active fragments per environment)",
                  fontsize=11)
-    fig.tight_layout(rect=[0, 0, 0.88, 0.88])
+    fig.tight_layout(rect=[0, 0, 0.82, 0.88])
+
+    cbar = fig.colorbar(im, ax=axes.tolist(), shrink=0.7, pad=0.12,
+                         fraction=0.03)
+    cbar.set_label("Differential inclusion rate\n(cue present $-$ cue absent)", fontsize=8)
     _save_fig(fig, "fig_exp1_cue_primitive_heatmap.pdf")
     plt.close(fig)
     print("  [1/17] fig_exp1_cue_primitive_heatmap.pdf")
