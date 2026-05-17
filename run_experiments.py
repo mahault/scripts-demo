@@ -28,6 +28,8 @@ import os
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import numpy as np
+
 from architecture_core.core.types import AffectState, PerceptBundle, SkillRequest
 from architecture_core.cognition.scripts.script_types import SituationType
 from architecture_core.cognition.scripts.weak_recognizer import WeakScriptRecognizer, SituationBelief
@@ -61,6 +63,97 @@ EPSILON = 1e-6
 CONTEXT_GATE_THRESHOLD = 0.4
 
 CONTEXTS = ["reception", "corridor", "hospital"]
+
+# Context-dependent sensory noise profiles (Change 2: stochastic design).
+# Models how different environments structure observation quality:
+#   reception: clear signage, high precision (low noise)
+#   hospital: clear signs but complex social scene (moderate noise)
+#   corridor: transient cues, low precision (high noise)
+CONTEXT_NOISE_PROFILES = {
+    "reception": 0.05,
+    "hospital": 0.10,
+    "corridor": 0.20,
+}
+
+# Context-dependent gating precision (gamma per context).
+# In active inference, environmental structure supports precision:
+#   - Well-organized environments (reception: signs, stanchions, counters)
+#     afford high precision — the agent confidently knows which scripts apply.
+#   - Structured but complex environments (hospital: clear norms but many actors)
+#     afford moderate precision — some gating uncertainty.
+#   - Transient/ambiguous environments (corridor: brief encounters, unclear norms)
+#     afford lower precision — more exploratory, less decisive gating.
+#
+# Higher gamma → sigmoid is steeper → gating is more decisive (less stochastic noise).
+# Lower gamma → sigmoid is flatter → gating is more uncertain (more stochastic noise).
+CONTEXT_PRECISION_GAMMA = {
+    "reception": 6.0,   # high precision: structured, clear affordances
+    "hospital": 4.5,    # moderate precision: structured norms, complex scene
+    "corridor": 3.0,    # lower precision: transient, ambiguous affordances
+}
+
+# Explicit per-context C-matrix preferences (Change 3: stronger environment effects).
+# Each context has qualitatively different goal structures that determine
+# how the agent evaluates policies (what outcomes are preferred).
+#
+# In active inference, C = ln P(o) encodes prior preferences over observations.
+# The risk term in EFE is -ln P(o_preferred | s_tau), so:
+#   - High C-value (0.95) → low risk (-ln(0.95) ≈ 0.05 nats)
+#   - Low C-value (0.02) → high risk (-ln(0.02) ≈ 3.9 nats)
+#
+# Strong differentiation: each context has 1-2 strongly preferred goal states
+# and actively penalizes situations that belong to other contexts. This is
+# principled because environments genuinely constrain what counts as successful
+# behaviour (queuing in a corridor is inappropriate; rushing in a hospital is inappropriate).
+CONTEXT_C_MATRIX = {
+    "reception": {
+        # Goal: efficient service interaction. Queuing/approaching are instrumental.
+        "open_area": 0.05,
+        "corridor_encounter": 0.02,
+        "scene_assessed": 0.20,
+        "in_queue": 0.60,
+        "ready_for_service": 0.80,
+        "at_counter": 0.97,
+        "interaction": 0.99,
+        "narrow_passage": 0.02,
+        "doorway": 0.02,
+        "hazard": 0.01,
+        "meeting_point": 0.85,
+        "handover": 0.90,
+    },
+    "hospital": {
+        # Goal: patient orderly waiting. Interaction/counter states are discouraged
+        # (hospital context rewards patience, not assertive approach).
+        "open_area": 0.05,
+        "corridor_encounter": 0.02,
+        "scene_assessed": 0.50,
+        "in_queue": 0.97,
+        "ready_for_service": 0.99,
+        "at_counter": 0.15,
+        "interaction": 0.08,
+        "narrow_passage": 0.02,
+        "doorway": 0.02,
+        "hazard": 0.01,
+        "meeting_point": 0.10,
+        "handover": 0.12,
+    },
+    "corridor": {
+        # Goal: brief assessment and passage. Extended interaction/queuing
+        # are strongly non-preferred (corridor encounters should be brief).
+        "open_area": 0.25,
+        "corridor_encounter": 0.40,
+        "scene_assessed": 0.99,
+        "in_queue": 0.03,
+        "ready_for_service": 0.02,
+        "at_counter": 0.02,
+        "interaction": 0.02,
+        "narrow_passage": 0.50,
+        "doorway": 0.35,
+        "hazard": 0.01,
+        "meeting_point": 0.05,
+        "handover": 0.03,
+    },
+}
 
 ALL_FRAGMENT_NAMES = [
     "observe_scene",
@@ -420,13 +513,26 @@ def compute_policy_EFE(
 
         G += risk + ambiguity
 
-    # Terminal risk: C-matrix penalty for not reaching preferred end state
-    # P(preferred | phase) increases with phase advancement
-    # Phase 5 (interaction) = fully preferred → P=0.95 → risk ≈ 0.05
-    # Phase 0 (no progress) = not preferred → P=0.05 → risk ≈ 3.0
-    max_possible_phase = 5
-    p_preferred_terminal = 0.05 + 0.90 * (max_phase_reached / max_possible_phase)
-    terminal_risk = -math.log(p_preferred_terminal)
+    # Terminal risk: C-matrix penalty for not reaching preferred terminal state.
+    # Uses the actual C-matrix preference for the highest-phase situation reached,
+    # ensuring the terminal penalty is context-dependent (principled active inference:
+    # the C-matrix encodes the agent's goals, and unmet goals increase EFE).
+    if max_phase_reached > 0:
+        # Find the situation name for the max phase reached
+        terminal_sit = None
+        for sit, phase in _SITUATION_PHASE.items():
+            if phase == max_phase_reached:
+                terminal_sit = sit
+                break
+        if terminal_sit:
+            p_terminal = context_affinities.get(terminal_sit, 0.1)
+        else:
+            p_terminal = 0.1
+    else:
+        # No progress at all — use lowest preference
+        p_terminal = 0.02
+    p_terminal = max(min(p_terminal, 0.999), 0.001)
+    terminal_risk = -math.log(p_terminal)
     G += terminal_risk
 
     return G
@@ -628,18 +734,8 @@ def run_single_condition(cond: ExperimentCondition) -> ExperimentResult:
             for i in range(len(sequence) - 1)
         )
 
-    # Context affinities for EFE computation (using inferred context)
-    context_affinities = {}
-    for sit in _SITUATION_PHASE:
-        # Approximate: situations used by high-affinity fragments get high preference
-        best_aff = 0.1
-        for frag in fragments:
-            aff = frag.situation_affinity.get(inferred_context, 0.0)
-            for p_name in frag.primitive_cluster:
-                prim = lib.get(p_name)
-                if prim and prim.postcondition_situation == sit:
-                    best_aff = max(best_aff, aff)
-        context_affinities[sit] = best_aff
+    # Context affinities for EFE computation — use explicit per-context C-matrix
+    context_affinities = CONTEXT_C_MATRIX.get(inferred_context, CONTEXT_C_MATRIX["reception"])
 
     total_efe = compute_policy_EFE(topo, sequence, lib, context_affinities)
 
@@ -730,6 +826,7 @@ def run_single_condition_stochastic(
     learned_affinities: Optional[Dict[str, Dict[str, float]]] = None,
     learned_weights: Optional[List[SituationType]] = None,
     precision_gating: Optional[PrecisionGating] = None,
+    stochastic_gating: bool = False,
 ) -> ExperimentResult:
     """Run the composition pipeline with sensory precision modulation.
 
@@ -739,6 +836,7 @@ def run_single_condition_stochastic(
     - Precision-based gating (from PrecisionGating) or fixed threshold fallback
     - Learned affinities override (from AffinityLearner Dirichlet posterior)
     - Learned A-matrix weights (from RecognizerLearner generative model)
+    - Stochastic gating via Bernoulli sampling (when stochastic_gating=True)
 
     The sensory_precision parameter controls how much the observation
     likelihood contributes to the posterior — this is the active inference
@@ -794,9 +892,26 @@ def run_single_condition_stochastic(
     # Fragment gating: precision-based (principled) or threshold (fallback)
     if precision_gating is not None:
         # Precision-based gating: P(activate) = sigma(gamma * (aff - baseline))
-        gating_result = precision_gating.gate_fragments(
-            effective_affinities, n_contexts=len(CONTEXTS)
-        )
+        # When stochastic_gating is True:
+        #   1. Use context-dependent gamma (environmental precision)
+        #   2. Use Bernoulli sampling from sigmoid probabilities
+        if stochastic_gating:
+            gating_rng = np.random.default_rng(seed)
+            # Context-dependent precision: structured environments afford
+            # higher gamma (more decisive gating), ambiguous environments
+            # afford lower gamma (more exploratory)
+            context_gamma = CONTEXT_PRECISION_GAMMA.get(inferred_context, 4.5)
+            # Temporarily set context-appropriate gamma for this trial
+            original_gamma = precision_gating._gamma
+            precision_gating._gamma = context_gamma
+            gating_result = precision_gating.gate_fragments(
+                effective_affinities, n_contexts=len(CONTEXTS), rng=gating_rng
+            )
+            precision_gating._gamma = original_gamma
+        else:
+            gating_result = precision_gating.gate_fragments(
+                effective_affinities, n_contexts=len(CONTEXTS)
+            )
         for f in requested:
             if f.name in gating_result.active_fragments:
                 fragments.append(f)
@@ -884,16 +999,8 @@ def run_single_condition_stochastic(
             for i in range(len(sequence) - 1)
         )
 
-    context_affinities = {}
-    for sit in _SITUATION_PHASE:
-        best_aff = 0.1
-        for frag in fragments:
-            aff = frag.situation_affinity.get(inferred_context, 0.0)
-            for p_name in frag.primitive_cluster:
-                prim = lib.get(p_name)
-                if prim and prim.postcondition_situation == sit:
-                    best_aff = max(best_aff, aff)
-        context_affinities[sit] = best_aff
+    # Context affinities for EFE computation — use explicit per-context C-matrix
+    context_affinities = CONTEXT_C_MATRIX.get(inferred_context, CONTEXT_C_MATRIX["reception"])
 
     total_efe = compute_policy_EFE(topo, sequence, lib, context_affinities)
 
@@ -1786,9 +1893,262 @@ def main_learned():
     print(f"{'=' * 60}")
 
 
+def main_stochastic():
+    """Run multi-trial stochastic experiments with principled active inference noise.
+
+    Runs each of the 240 conditions with N_TRIALS stochastic trials using:
+    - Context-appropriate sensory noise from CONTEXT_NOISE_PROFILES
+    - Stochastic Bernoulli gating via PrecisionGating with rng
+    - Different seed per trial
+
+    Outputs per-condition distributions with means, CIs, effect sizes, ANOVAs.
+    """
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
+    N_TRIALS = 30
+    BASE_SEED = 42
+
+    out_dir = os.path.join(os.path.dirname(__file__), "experiment_results", "stochastic")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # --- Learn parameters (re-use learning phase) ---
+    print("=" * 60)
+    print("STOCHASTIC EXPERIMENTS: Multi-trial design with principled noise")
+    print("=" * 60)
+    print(f"\n  N_TRIALS per condition: {N_TRIALS}")
+    print(f"  Noise profiles: {CONTEXT_NOISE_PROFILES}")
+
+    print(f"\n  Running learning phase...")
+    affinity_learner, precision_gating, recognizer_learner = run_learning_phase(
+        n_episodes_per_context=100,
+        noise_std=0.1,
+        seed=12345,
+    )
+    learned_affinities = affinity_learner.affinities
+    learned_sit_types = recognizer_learner.get_situation_types()
+    print(f"  Precision gamma: {precision_gating.gamma:.4f}")
+
+    # --- Generate all 240 conditions ---
+    all_conditions = (
+        generate_exp1_conditions()
+        + generate_exp2_conditions()
+        + generate_exp3_conditions()
+    )
+    n_conditions = len(all_conditions)
+    print(f"\n  Total conditions: {n_conditions}")
+    print(f"  Total trials: {n_conditions * N_TRIALS}")
+
+    # --- Run multi-trial experiments ---
+    print(f"\n{'=' * 60}")
+    print("Running stochastic trials...")
+    print("=" * 60)
+
+    # Collect per-condition trial data
+    stochastic_results = []
+
+    for ci, cond in enumerate(all_conditions):
+        context = cond.context
+        noise_std = CONTEXT_NOISE_PROFILES.get(context, 0.1)
+
+        trial_data = {
+            "condition_id": cond.condition_id,
+            "experiment": cond.experiment,
+            "context": context,
+            "fragment_names": cond.fragment_names,
+            "noise_std": noise_std,
+            "trials": [],
+        }
+
+        for trial_idx in range(N_TRIALS):
+            trial_seed = BASE_SEED + ci * N_TRIALS + trial_idx
+
+            result = run_single_condition_stochastic(
+                cond,
+                noise_std=noise_std,
+                seed=trial_seed,
+                precision_gating=precision_gating,
+                learned_affinities=learned_affinities,
+                learned_weights=learned_sit_types,
+                stochastic_gating=True,
+            )
+
+            trial_data["trials"].append({
+                "seed": trial_seed,
+                "n_active_fragments": result.n_active_fragments,
+                "n_primitives": result.n_primitives,
+                "total_VFE": result.total_VFE,
+                "mean_VFE": result.mean_VFE,
+                "total_EFE": result.total_EFE,
+                "efe_rate": result.efe_rate,
+                "per_transition_VFE": result.per_transition_VFE,
+                "inferred_context": result.inferred_context,
+                "belief_confidence": result.belief_confidence,
+                "topology_density": result.topology_density,
+                "sequence_length": result.sequence_length,
+                "backbone_length": result.backbone_length,
+            })
+
+        # Compute per-condition summary
+        efe_values = [t["total_EFE"] for t in trial_data["trials"]]
+        n_prims_values = [t["n_primitives"] for t in trial_data["trials"]]
+        trial_data["summary"] = {
+            "efe_mean": float(np.mean(efe_values)),
+            "efe_std": float(np.std(efe_values, ddof=1)) if len(efe_values) > 1 else 0.0,
+            "efe_ci_lower": float(np.percentile(efe_values, 2.5)),
+            "efe_ci_upper": float(np.percentile(efe_values, 97.5)),
+            "n_primitives_mean": float(np.mean(n_prims_values)),
+            "n_primitives_std": float(np.std(n_prims_values, ddof=1)) if len(n_prims_values) > 1 else 0.0,
+        }
+
+        stochastic_results.append(trial_data)
+
+        if (ci + 1) % 20 == 0 or ci == 0 or ci == n_conditions - 1:
+            efe_m = trial_data["summary"]["efe_mean"]
+            efe_s = trial_data["summary"]["efe_std"]
+            print(f"  [{ci+1:3d}/{n_conditions}] {cond.condition_id}: "
+                  f"EFE={efe_m:.3f} +/- {efe_s:.3f}, "
+                  f"n_prims={trial_data['summary']['n_primitives_mean']:.1f}")
+
+    # --- Save raw results ---
+    results_path = os.path.join(out_dir, "stochastic_results.json")
+    with open(results_path, "w", encoding="utf-8") as f:
+        json.dump(stochastic_results, f, indent=2)
+    print(f"\n  -> Saved {len(stochastic_results)} conditions to {results_path}")
+
+    # --- Statistical Analysis ---
+    print(f"\n{'=' * 60}")
+    print("Statistical Analysis")
+    print("=" * 60)
+
+    # Collect EFE per context across all conditions
+    context_efe = {ctx: [] for ctx in CONTEXTS}
+    context_n_prims = {ctx: [] for ctx in CONTEXTS}
+    for cond_data in stochastic_results:
+        ctx = cond_data["context"]
+        for trial in cond_data["trials"]:
+            context_efe[ctx].append(trial["total_EFE"])
+            context_n_prims[ctx].append(trial["n_primitives"])
+
+    # Per-context summaries
+    print("\n  --- Per-context EFE summary ---")
+    for ctx in CONTEXTS:
+        vals = np.array(context_efe[ctx])
+        ci_lo = np.percentile(vals, 2.5)
+        ci_hi = np.percentile(vals, 97.5)
+        print(f"    {ctx}: mean={np.mean(vals):.4f}, "
+              f"SD={np.std(vals, ddof=1):.4f}, "
+              f"95% CI=[{ci_lo:.4f}, {ci_hi:.4f}], "
+              f"n={len(vals)}")
+
+    # Pairwise Cohen's d
+    print("\n  --- Pairwise Cohen's d (EFE) ---")
+    from itertools import combinations as _combs
+    stats_summary = {"pairwise_cohens_d": {}, "context_summaries": {}}
+
+    for c1, c2 in _combs(CONTEXTS, 2):
+        g1 = np.array(context_efe[c1])
+        g2 = np.array(context_efe[c2])
+        n1, n2 = len(g1), len(g2)
+        m1, m2 = np.mean(g1), np.mean(g2)
+        s1, s2 = np.var(g1, ddof=1), np.var(g2, ddof=1)
+        pooled = np.sqrt(((n1 - 1) * s1 + (n2 - 1) * s2) / (n1 + n2 - 2))
+        d = (m1 - m2) / pooled if pooled > 1e-10 else 0.0
+        print(f"    {c1} vs {c2}: d = {d:.4f}")
+        stats_summary["pairwise_cohens_d"][f"{c1}_vs_{c2}"] = round(d, 4)
+
+    # One-way ANOVA (manual F-test)
+    print("\n  --- One-way ANOVA (context effect on EFE) ---")
+    all_efe = []
+    group_labels = []
+    for ctx in CONTEXTS:
+        all_efe.extend(context_efe[ctx])
+        group_labels.extend([ctx] * len(context_efe[ctx]))
+    all_efe = np.array(all_efe)
+    grand_mean = np.mean(all_efe)
+
+    ss_between = sum(
+        len(context_efe[ctx]) * (np.mean(context_efe[ctx]) - grand_mean) ** 2
+        for ctx in CONTEXTS
+    )
+    ss_within = sum(
+        np.sum((np.array(context_efe[ctx]) - np.mean(context_efe[ctx])) ** 2)
+        for ctx in CONTEXTS
+    )
+    k = len(CONTEXTS)
+    n_total = len(all_efe)
+    df_between = k - 1
+    df_within = n_total - k
+    ms_between = ss_between / df_between if df_between > 0 else 0
+    ms_within = ss_within / df_within if df_within > 0 else 1
+    f_stat = ms_between / ms_within if ms_within > 1e-10 else 0.0
+
+    # Approximate p-value using F-distribution approximation
+    # For large df_within, F ~ chi2(df_between) / df_between
+    p_approx = math.exp(-f_stat * df_between / 2) if f_stat > 0 else 1.0
+    p_approx = min(1.0, max(p_approx, 1e-300))
+
+    # Eta-squared effect size
+    eta_sq = ss_between / (ss_between + ss_within) if (ss_between + ss_within) > 0 else 0.0
+
+    print(f"    F({df_between}, {df_within}) = {f_stat:.4f}")
+    print(f"    p ~ {p_approx:.2e}")
+    print(f"    eta^2 = {eta_sq:.4f}")
+
+    stats_summary["anova"] = {
+        "F_statistic": round(f_stat, 4),
+        "df_between": df_between,
+        "df_within": df_within,
+        "p_approx": p_approx,
+        "eta_squared": round(eta_sq, 4),
+    }
+
+    for ctx in CONTEXTS:
+        vals = np.array(context_efe[ctx])
+        stats_summary["context_summaries"][ctx] = {
+            "efe_mean": round(float(np.mean(vals)), 4),
+            "efe_std": round(float(np.std(vals, ddof=1)), 4),
+            "efe_ci_lower": round(float(np.percentile(vals, 2.5)), 4),
+            "efe_ci_upper": round(float(np.percentile(vals, 97.5)), 4),
+            "n_trials": len(vals),
+        }
+
+    # Variance check: verify stochasticity produced real variance
+    print("\n  --- Variance check (per-condition SD) ---")
+    sds = []
+    for cond_data in stochastic_results:
+        efe_vals = [t["total_EFE"] for t in cond_data["trials"]]
+        if len(efe_vals) > 1:
+            sds.append(np.std(efe_vals, ddof=1))
+    nonzero_sds = [s for s in sds if s > 0]
+    print(f"    Conditions with SD > 0: {len(nonzero_sds)}/{len(sds)}")
+    if nonzero_sds:
+        print(f"    Mean SD: {np.mean(nonzero_sds):.4f}")
+        print(f"    Median SD: {np.median(nonzero_sds):.4f}")
+
+    stats_summary["variance_check"] = {
+        "conditions_with_variance": len(nonzero_sds),
+        "total_conditions": len(sds),
+        "mean_sd": round(float(np.mean(nonzero_sds)), 4) if nonzero_sds else 0.0,
+    }
+
+    # Save statistical summary
+    stats_path = os.path.join(out_dir, "statistical_summary.json")
+    with open(stats_path, "w", encoding="utf-8") as f:
+        json.dump(stats_summary, f, indent=2)
+    print(f"\n  -> Saved statistical summary to {stats_path}")
+
+    print(f"\n{'=' * 60}")
+    print("DONE — Stochastic multi-trial experiments complete.")
+    print(f"Results in: {out_dir}")
+    print(f"{'=' * 60}")
+
+
 if __name__ == "__main__":
     import sys
-    if "--learned" in sys.argv:
+    if "--stochastic" in sys.argv:
+        main_stochastic()
+    elif "--learned" in sys.argv:
         main_learned()
     else:
         main()

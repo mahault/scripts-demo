@@ -1318,6 +1318,239 @@ def print_statistics(df1, df2, df3, df_all):
 
 
 # ================================================================
+# Stochastic multi-trial analysis
+# ================================================================
+STOCHASTIC_RESULTS_DIR = os.path.join(os.path.dirname(__file__), "experiment_results", "stochastic")
+
+
+def analyze_stochastic_results():
+    """Analyze multi-trial stochastic experiment results.
+
+    Loads stochastic_results.json, groups by context, computes:
+    - Per-condition mean +/- CI
+    - One-way ANOVA for context effects on EFE, n_primitives
+    - Pairwise Cohen's d between contexts
+    - Violin/distribution plots showing context separation
+    """
+    results_path = os.path.join(STOCHASTIC_RESULTS_DIR, "stochastic_results.json")
+    if not os.path.isfile(results_path):
+        print(f"  Stochastic results not found at: {results_path}")
+        print("  Run: python run_experiments.py --stochastic")
+        return
+
+    with open(results_path, "r", encoding="utf-8") as f:
+        stochastic_data = json.load(f)
+
+    stochastic_fig_dir = os.path.join(STOCHASTIC_RESULTS_DIR, "figures")
+    os.makedirs(stochastic_fig_dir, exist_ok=True)
+
+    print(f"\n{'=' * 60}")
+    print("Stochastic Multi-Trial Analysis")
+    print(f"{'=' * 60}")
+    print(f"  Loaded {len(stochastic_data)} conditions")
+
+    # Collect per-context data
+    context_efe = defaultdict(list)
+    context_n_prims = defaultdict(list)
+    context_efe_rate = defaultdict(list)
+    context_vfe = defaultdict(list)
+
+    for cond_data in stochastic_data:
+        ctx = cond_data["context"]
+        for trial in cond_data["trials"]:
+            context_efe[ctx].append(trial["total_EFE"])
+            context_n_prims[ctx].append(trial["n_primitives"])
+            context_efe_rate[ctx].append(trial.get("efe_rate", 0.0) if trial.get("efe_rate") else 0.0)
+            context_vfe[ctx].append(trial["total_VFE"])
+
+    contexts = ["reception", "corridor", "hospital"]
+
+    # --- Figure S1: EFE Violin plots by context ---
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+
+    metrics_data = [
+        (context_efe, "Total EFE $\\mathcal{G}(\\pi)$", "EFE"),
+        (context_n_prims, "Policy length $|\\pi|$", "n_primitives"),
+        (context_vfe, "Total VFE $\\mathcal{F}(\\pi)$", "VFE"),
+    ]
+
+    for ax_idx, (data_dict, ylabel, metric_name) in enumerate(metrics_data):
+        ax = axes[ax_idx]
+        positions = []
+        violin_data = []
+        colors_list = []
+
+        for ci, ctx in enumerate(contexts):
+            vals = np.array(data_dict[ctx])
+            violin_data.append(vals)
+            positions.append(ci)
+            colors_list.append(CONTEXT_COLORS[ctx])
+
+        parts = ax.violinplot(violin_data, positions=positions, showmeans=True,
+                              showmedians=True, showextrema=False)
+
+        for i, pc in enumerate(parts["bodies"]):
+            pc.set_facecolor(colors_list[i])
+            pc.set_alpha(0.6)
+        parts["cmeans"].set_color("black")
+        parts["cmedians"].set_color("red")
+
+        # Add individual points (jittered)
+        for ci, ctx in enumerate(contexts):
+            vals = np.array(data_dict[ctx])
+            # Subsample for plotting clarity
+            n_plot = min(200, len(vals))
+            rng_plot = np.random.default_rng(42)
+            idx = rng_plot.choice(len(vals), n_plot, replace=False)
+            jitter = rng_plot.uniform(-0.15, 0.15, n_plot)
+            ax.scatter(ci + jitter, vals[idx], alpha=0.15, s=8,
+                       color=CONTEXT_COLORS[ctx], edgecolors="none")
+
+        ax.set_xticks(range(len(contexts)))
+        ax.set_xticklabels([c.capitalize() for c in contexts])
+        ax.set_ylabel(ylabel)
+        ax.grid(axis="y", alpha=0.3)
+
+        # Annotate effect sizes
+        for c1_idx, c2_idx in [(0, 2), (0, 1), (1, 2)]:
+            d = cohens_d(violin_data[c1_idx], violin_data[c2_idx])
+            mid_x = (c1_idx + c2_idx) / 2
+            y_top = max(np.max(violin_data[c1_idx]), np.max(violin_data[c2_idx]))
+            if abs(d) > 0.2:
+                ax.text(mid_x, y_top * 0.95, f"d={d:.2f}",
+                        ha="center", fontsize=7, color="darkred")
+
+    axes[0].set_title("EFE Distribution by Context")
+    axes[1].set_title("Policy Length Distribution by Context")
+    axes[2].set_title("VFE Distribution by Context")
+
+    fig.suptitle("Stochastic Multi-Trial: Context Separation\n"
+                 "(Bernoulli gating + context-dependent sensory noise)",
+                 fontsize=12)
+    fig.tight_layout(rect=[0, 0, 1, 0.92])
+    fig.savefig(os.path.join(stochastic_fig_dir, "fig_stochastic_violin_context.pdf"))
+    plt.close(fig)
+    print("  [S1] fig_stochastic_violin_context.pdf")
+
+    # --- Figure S2: Per-condition EFE distributions ---
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Group by experiment and context, show condition means with error bars
+    for ctx in contexts:
+        ctx_conds = [c for c in stochastic_data if c["context"] == ctx]
+        means = [c["summary"]["efe_mean"] for c in ctx_conds]
+        stds = [c["summary"]["efe_std"] for c in ctx_conds]
+        x = range(len(means))
+
+        ax.errorbar(x, means, yerr=stds, fmt="o", markersize=3,
+                    color=CONTEXT_COLORS[ctx], alpha=0.6, capsize=1,
+                    label=f"{ctx.capitalize()} (n={len(ctx_conds)})")
+
+    ax.set_xlabel("Condition index (within context)")
+    ax.set_ylabel("Mean EFE $\\pm$ 1 SD")
+    ax.set_title("Per-Condition EFE Distributions\n"
+                 "(Error bars show real variance from stochastic gating)")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(os.path.join(stochastic_fig_dir, "fig_stochastic_condition_distributions.pdf"))
+    plt.close(fig)
+    print("  [S2] fig_stochastic_condition_distributions.pdf")
+
+    # --- Figure S3: Effect size forest plot ---
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    metrics_for_forest = [
+        ("total_EFE", context_efe, "Total EFE"),
+        ("n_primitives", context_n_prims, "Policy length"),
+        ("total_VFE", context_vfe, "Total VFE"),
+    ]
+    pairs = [("reception", "corridor"), ("reception", "hospital"), ("corridor", "hospital")]
+    pair_labels = ["Rec vs Corr", "Rec vs Hosp", "Corr vs Hosp"]
+    pair_colors = ["#2196F3", "#FF9800", "#4CAF50"]
+
+    y_pos = 0
+    y_ticks = []
+    y_labels = []
+
+    for metric_name, data_dict, metric_label in metrics_for_forest:
+        for pi, ((c1, c2), plabel) in enumerate(zip(pairs, pair_labels)):
+            g1 = np.array(data_dict[c1])
+            g2 = np.array(data_dict[c2])
+            d = cohens_d(g1, g2)
+
+            # Bootstrap CI for Cohen's d
+            n_boot = 1000
+            boot_rng = np.random.default_rng(42)
+            boot_ds = []
+            for _ in range(n_boot):
+                b1 = boot_rng.choice(g1, len(g1), replace=True)
+                b2 = boot_rng.choice(g2, len(g2), replace=True)
+                boot_ds.append(cohens_d(b1, b2))
+            ci_lo = np.percentile(boot_ds, 2.5)
+            ci_hi = np.percentile(boot_ds, 97.5)
+
+            ax.errorbar(d, y_pos, xerr=[[d - ci_lo], [ci_hi - d]],
+                        fmt="o", color=pair_colors[pi], markersize=6,
+                        capsize=4, linewidth=1.5)
+            ax.text(max(d, ci_hi) + 0.1, y_pos, f"{d:.2f}", va="center", fontsize=8)
+
+            y_ticks.append(y_pos)
+            y_labels.append(f"{metric_label}\n({plabel})" if pi == 0 else f"({plabel})")
+            y_pos += 1
+        y_pos += 0.5
+
+    ax.axvline(0, color="black", linewidth=0.5)
+    ax.axvline(0.2, color="gray", linestyle="--", alpha=0.4)
+    ax.axvline(0.8, color="gray", linestyle=":", alpha=0.4)
+    ax.axvline(-0.2, color="gray", linestyle="--", alpha=0.4)
+    ax.axvline(-0.8, color="gray", linestyle=":", alpha=0.4)
+
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels(y_labels, fontsize=8)
+    ax.set_xlabel("Cohen's d (with 95% bootstrap CI)")
+    ax.set_title("Effect Sizes: Context Differences in Stochastic Experiments")
+    ax.grid(axis="x", alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(os.path.join(stochastic_fig_dir, "fig_stochastic_effect_sizes.pdf"))
+    plt.close(fig)
+    print("  [S3] fig_stochastic_effect_sizes.pdf")
+
+    # --- Print ANOVA ---
+    print("\n  --- One-way ANOVA (context effect) ---")
+    for metric_name, data_dict, metric_label in metrics_for_forest:
+        all_vals = np.concatenate([np.array(data_dict[ctx]) for ctx in contexts])
+        grand_mean = np.mean(all_vals)
+        ss_between = sum(
+            len(data_dict[ctx]) * (np.mean(data_dict[ctx]) - grand_mean) ** 2
+            for ctx in contexts
+        )
+        ss_within = sum(
+            np.sum((np.array(data_dict[ctx]) - np.mean(data_dict[ctx])) ** 2)
+            for ctx in contexts
+        )
+        k = len(contexts)
+        n_tot = len(all_vals)
+        df_b = k - 1
+        df_w = n_tot - k
+        ms_b = ss_between / df_b if df_b > 0 else 0
+        ms_w = ss_within / df_w if df_w > 0 else 1
+        f_val = ms_b / ms_w if ms_w > 1e-10 else 0.0
+        eta_sq = ss_between / (ss_between + ss_within) if (ss_between + ss_within) > 0 else 0.0
+        print(f"    {metric_label}: F({df_b},{df_w})={f_val:.2f}, eta^2={eta_sq:.4f}")
+
+    # --- Print pairwise Cohen's d ---
+    print("\n  --- Pairwise Cohen's d ---")
+    for metric_name, data_dict, metric_label in metrics_for_forest:
+        print(f"    {metric_label}:")
+        for c1, c2 in pairs:
+            d = cohens_d(np.array(data_dict[c1]), np.array(data_dict[c2]))
+            print(f"      {c1} vs {c2}: d = {d:.4f}")
+
+    print(f"\n  Figures saved to: {stochastic_fig_dir}")
+
+
+# ================================================================
 # Main
 # ================================================================
 def main():
@@ -1368,6 +1601,14 @@ def main():
 
     print(f"\nAll 17 figures saved to: {FIG_DIR}")
 
+    # Stochastic analysis (if results exist)
+    if os.path.isfile(os.path.join(STOCHASTIC_RESULTS_DIR, "stochastic_results.json")):
+        analyze_stochastic_results()
+
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if "--stochastic" in sys.argv:
+        analyze_stochastic_results()
+    else:
+        main()

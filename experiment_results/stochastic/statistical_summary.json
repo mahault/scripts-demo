@@ -1,0 +1,42 @@
+{
+  "pairwise_cohens_d": {
+    "reception_vs_corridor": -0.6575,
+    "reception_vs_hospital": -0.3974,
+    "corridor_vs_hospital": 0.3075
+  },
+  "context_summaries": {
+    "reception": {
+      "efe_mean": 6.3888,
+      "efe_std": 5.6973,
+      "efe_ci_lower": 0.0506,
+      "efe_ci_upper": 20.2355,
+      "n_trials": 2400
+    },
+    "corridor": {
+      "efe_mean": 10.8388,
+      "efe_std": 7.691,
+      "efe_ci_lower": 1.4064,
+      "efe_ci_upper": 28.5942,
+      "n_trials": 2400
+    },
+    "hospital": {
+      "efe_mean": 8.7161,
+      "efe_std": 6.0121,
+      "efe_ci_lower": 3.0567,
+      "efe_ci_upper": 23.5499,
+      "n_trials": 2400
+    }
+  },
+  "anova": {
+    "F_statistic": 279.202,
+    "df_between": 2,
+    "df_within": 7197,
+    "p_approx": 5.547802524496047e-122,
+    "eta_squared": 0.072
+  },
+  "variance_check": {
+    "conditions_with_variance": 240,
+    "total_conditions": 240,
+    "mean_sd": 5.3201
+  }
+}

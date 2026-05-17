@@ -154,6 +154,7 @@ class PrecisionGating:
         self,
         affinities: Dict[str, float],
         n_contexts: int = 3,
+        rng: Optional[np.random.Generator] = None,
     ) -> GatingResult:
         """Apply precision-gated selection to fragment affinities.
 
@@ -164,6 +165,11 @@ class PrecisionGating:
             These are E[D(f,c)] from the Dirichlet posterior.
         n_contexts : int
             Number of contexts (for computing uniform baseline).
+        rng : np.random.Generator | None
+            When provided, sample from Bernoulli(sigmoid_prob) instead of
+            hard cutoff at 0.5. This introduces principled stochasticity
+            (action selection under uncertainty). When None, deterministic
+            behavior is preserved (backward compatible).
 
         Returns
         -------
@@ -179,8 +185,14 @@ class PrecisionGating:
             prob = _sigmoid(logit)
             probs[frag_name] = prob
 
-            if prob > 0.5:
-                active.append(frag_name)
+            if rng is not None:
+                # Stochastic: Bernoulli sampling from sigmoid probability
+                if rng.random() < prob:
+                    active.append(frag_name)
+            else:
+                # Deterministic: hard cutoff at 0.5
+                if prob > 0.5:
+                    active.append(frag_name)
 
         return GatingResult(
             active_fragments=active,
