@@ -32,21 +32,21 @@
 
 \section{Motivation}
 
-Stanchions in a reception make queuing the free-energy-minimizing policy. The same stanchions in a corridor do nothing: the context suppresses the queuing script. The difference is structural, not evaluative. We ask whether environment can parameterize a generative model so that context determines which scripts are assembled \citep{parr2022active,albarracin2021variational,latour1992missing,guenincarlut2023embedded}.
+Stanchions in a reception make queuing the free-energy-minimizing policy. The same stanchions in a corridor do nothing: the context suppresses the queuing script. The difference is not only evaluative but structural: some actions become categorically unavailable. We ask whether environment can parameterize a generative model so that context determines both which scripts are assembled and how they are evaluated \citep{parr2022active,albarracin2021variational,latour1992missing,guenincarlut2023embedded}.
 
 \section{Architecture}
 
-Four matrices. $\mathbf{A}$ infers context from cues. $\mathbf{B}$ is assembled from fragment primitives. $\mathbf{C}$ encodes per-context preferences. $\mathbf{D}$ encodes fragment--context associations. Fragment activation:
+Four matrices. $\mathbf{A}$ infers context from cues. $\mathbf{B}$ is assembled from fragment primitives. $\mathbf{C}$ encodes per-context preferences. $\mathbf{D}$ encodes fragment--context associations. Activation:
 $P(\text{act } f \mid c) = \sigma(\gamma_c \cdot (E[D(f,c)] - 1/K))$.
 Precision $\gamma_c$ varies: reception $\gamma{=}6$ (sharp gating), corridor $\gamma{=}3$ (flat, exploratory). Stochastic trials sample from Bernoulli($P$).
 
-The $\mathbf{C}$-matrix encodes opposing goals. Reception: $C_{\text{interaction}} = 0.99$. Corridor: $C_{\text{scene\_assessed}} = 0.99$, $C_{\text{interaction}} = 0.02$. Hospital: $C_{\text{ready\_for\_service}} = 0.99$, $C_{\text{interaction}} = 0.08$. Risk in EFE: $-\ln C(o_\tau)$, penalizing wrong outcomes by up to 3.9 nats.
+The $\mathbf{C}$-matrix encodes opposing goals. Reception: $C_{\text{interaction}} = 0.99$. Corridor: $C_{\text{scene\_assessed}} = 0.99$, $C_{\text{interaction}} = 0.02$. Hospital: $C_{\text{ready\_for\_service}} = 0.99$, $C_{\text{interaction}} = 0.08$. Risk: $-\ln C(o_\tau)$, penalizing wrong outcomes by up to 3.9 nats.
 
 Affinities are learned by Dirichlet accumulation from ablation-based prediction errors, calibrated by empirical Bayes.
 
 \section{Experiments}
 
-240 conditions $\times$ 30 trials $=$ 7,200. Sensory noise per context ($\sigma = 0.05$, $0.10$, $0.20$). Bernoulli gating. Context shapes EFE: $F(2, 7197) = 279.2$, $p < 10^{-100}$, $\eta^2 = 0.072$ (Table~\ref{tab:anova}). With six fragments, reception vs.\ corridor: $d = 0.91$.
+240 conditions $\times$ 30 trials $=$ 7,200. Sensory noise per context ($\sigma = 0.05$, $0.10$, $0.20$) and Bernoulli gating. Context shapes EFE: $F(2, 7197) = 279.2$, $p < 10^{-100}$, $\eta^2 = 0.072$ (Table~\ref{tab:anova}). With six fragments, reception vs.\ corridor: $d = 0.91$.
 
 \begin{table}[h]
 \centering
@@ -66,7 +66,7 @@ Hospital & 8.72 & 6.01 & [3.06, 23.55] & 2400 \\
 \label{tab:anova}
 \end{table}
 
-At $k{=}5$--6 fragments: $d = 0.87$--$0.91$ (reception--corridor), $d = 0.53$--$0.73$ (corridor--hospital). At $k{=}1$: $d \approx 0.1$. Cue factorial (48 cond.): stanchions activate queuing in reception, not corridor; $\rho$(cues, length) $= 0.82$ (corridor), $0.53$ (reception). Scaling (189 cond.): policy grows with $k$ ($\rho > 0.86$), slopes differ by context. Transfer (3 cond.): same six fragments, different behavior. Reception: 9 primitives with engagement. Corridor: 8, no queuing. Hospital: 9, patient queuing, no direct approach. Jaccard: 0.30; KL: 1.96 nats.
+At $k{=}5$--6: $d = 0.87$--$0.91$ (reception--corridor), $0.53$--$0.73$ (corridor--hospital). At $k{=}1$: $d \approx 0.1$. Cue factorial (48 cond.): stanchions activate queuing in reception, not corridor; $\rho$(cues, length) $= 0.82$ (corridor), $0.53$ (reception). Scaling (189 cond.): policy grows with $k$ ($\rho > 0.86$); slopes differ by context. Transfer (3 cond.): same fragments, different behavior. Reception: 9 primitives with engagement. Corridor: 8, no queuing. Hospital: 9, patient queuing, no direct approach. Jaccard: 0.30; KL: 1.96 nats.
 
 \begin{figure}[h]
   \centering
@@ -84,10 +84,10 @@ At $k{=}5$--6 fragments: $d = 0.87$--$0.91$ (reception--corridor), $d = 0.53$--$
 
 \section{Discussion}
 
-Environment determines which scripts enter composition, not how they are evaluated. Large effect ($d > 0.8$) at $k \geq 5$; vanishes at $k{=}1$. Akrich's inscription \citep{akrich1992description} made computational; Lefebvre \citep{lefebvre1991production} made quantitative. Context-dependent precision gives stereotyped behavior in structured environments, exploratory behavior in ambiguous ones. The $\mathbf{A}$-matrix closes the loop (93.3\% accuracy). Context explains 7\% of EFE variance; condition (fragment count) dominates by design. Simulated environments lack perceptual richness; learning the $\mathbf{C}$-matrix from interaction remains open.
+Environment shapes behavior at two levels: $\mathbf{D}$ gates which scripts enter composition, $\mathbf{C}$ evaluates the result against context-specific goals. Both produce large effects ($d > 0.8$ at $k \geq 5$, vanishing at $k{=}1$): Akrich's inscription \citep{akrich1992description} made computational, Lefebvre \citep{lefebvre1991production} made quantitative. Context-dependent precision gives stereotyped behavior in structured environments, exploratory behavior in ambiguous ones. The $\mathbf{A}$-matrix closes the loop (93.3\% accuracy). Context explains 7\% of EFE variance; condition (fragment count) dominates by design. Simulated environments lack perceptual richness; learning $\mathbf{C}$ from interaction remains open.
 
 \vspace{4pt}
-\noindent\textbf{Keywords:} active inference, social robotics, compositional assembly, embedded normativity, precision gating, material semiotics
+\noindent\textbf{Keywords:} active inference, social robotics, compositional assembly, embedded normativity, precision gating
 
 \bibliographystyle{apalike}
 \bibliography{references}
