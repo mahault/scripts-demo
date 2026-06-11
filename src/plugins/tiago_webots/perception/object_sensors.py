@@ -17,10 +17,20 @@ from plugins.tiago_webots.perception.sensors import TiagoWebotsSensors
 # Object types to discover in the world tree
 OBJECT_TYPES = {"Orange", "Apple", "Can"}
 
-# Table regions for classifying objects (apartment world)
+# Solid nodes with these name prefixes are also treated as manipulable objects.
+# This lets us place custom basket / tote / generic grocery items in the world.
+SOLID_OBJECT_PREFIXES = ("ITEM_", "BASKET_", "TOTE_")
+
+# Surface regions for classifying objects (apartment + retail demo worlds)
 TABLE_REGIONS = {
     "dining": {"center": (-1.074, -4.944), "radius": 1.0, "height": 0.74},
     "coffee": {"center": (-7.163, -2.555), "radius": 1.0, "height": 0.53},
+    # Retail demo regions
+    "stock":    {"center": (-5.5, -1.0),  "radius": 2.2, "height": 0.35},
+    "shelf_a":  {"center": (-2.0, -5.0),  "radius": 1.0, "height": 0.40},
+    "shelf_b":  {"center": (1.5, -5.0),   "radius": 1.0, "height": 0.40},
+    "counter":  {"center": (4.5, -7.5),   "radius": 1.2, "height": 0.85},
+    "entrance": {"center": (0.0, -8.5),   "radius": 1.2, "height": 0.01},
 }
 
 # Proximity threshold for grasping (robot must be this close to object)
@@ -88,23 +98,45 @@ class TiagoObjectSensors(TiagoWebotsSensors):
             except Exception:
                 continue
 
-            if type_name in OBJECT_TYPES:
-                name_field = node.getField("name")
-                obj_name = name_field.getSFString() if name_field else type_name.lower()
+            if not self._is_manipulable(node, type_name):
+                continue
 
-                # Use DEF name if available, else construct from type + index
-                obj_id = f"{type_name.lower()}_{obj_name}"
+            name_field = node.getField("name")
+            obj_name = name_field.getSFString() if name_field else type_name.lower()
 
-                pos = node.getField("translation").getSFVec3f()
-                table = self._classify_table(pos[0], pos[1])
+            pos = node.getField("translation").getSFVec3f()
+            table = self._classify_table(pos[0], pos[1])
 
-                self._object_nodes.append({
-                    "id": obj_id,
-                    "type": type_name,
-                    "node": node,
-                    "initial_pos": (pos[0], pos[1], pos[2]),
-                    "table": table,
-                })
+            # Basket / generic solid objects get a friendly type label
+            object_type = type_name
+            if type_name == "Solid" and any(obj_name.startswith(p) for p in SOLID_OBJECT_PREFIXES):
+                if obj_name.startswith("BASKET_"):
+                    object_type = "Basket"
+                else:
+                    object_type = "Item"
+
+            # Use DEF name if available, else construct from type + index
+            obj_id = f"{object_type.lower()}_{obj_name}"
+
+            self._object_nodes.append({
+                "id": obj_id,
+                "type": object_type,
+                "node": node,
+                "initial_pos": (pos[0], pos[1], pos[2]),
+                "table": table,
+            })
+
+    def _is_manipulable(self, node, type_name: str) -> bool:
+        """Return True if this node should be tracked as a manipulable object."""
+        if type_name in OBJECT_TYPES:
+            return True
+        if type_name == "Solid":
+            name_field = node.getField("name")
+            if name_field:
+                name = name_field.getSFString()
+                if any(name.startswith(p) for p in SOLID_OBJECT_PREFIXES):
+                    return True
+        return False
 
     def _classify_table(self, x: float, y: float) -> str:
         """Determine which table an object belongs to based on proximity."""
@@ -458,3 +490,53 @@ class TiagoObjectSensors(TiagoWebotsSensors):
                 pass
 
         return best_id
+
+    def find_object_in_region(
+        self, region: str,
+    ) -> Optional[str]:
+        """Return the ID of an available object currently in *region*."""
+        for obj_info in self._object_nodes:
+            obj_id = obj_info["id"]
+            if obj_id in self._placed_ids:
+                continue
+            if self._held_object and self._held_object["id"] == obj_id:
+                continue
+            if obj_info["table"] == region:
+                return obj_id
+        return None
+
+    def find_object_by_type(
+        self, object_type: str,
+    ) -> Optional[str]:
+        """Return the ID of an available object of the given type."""
+        for obj_info in self._object_nodes:
+            obj_id = obj_info["id"]
+            if obj_info["type"] != object_type:
+                continue
+            if obj_id in self._placed_ids:
+                continue
+            if self._held_object and self._held_object["id"] == obj_id:
+                continue
+            return obj_id
+        return None
+
+    def reset_placed(self) -> None:
+        """Clear the placed-id set so objects can be grasped again.
+
+        Useful when respawning stock for an endless demo loop.
+        """
+        self._placed_ids.clear()
+
+    def reset_all_objects(self) -> None:
+        """Teleport every tracked object back to its initial position.
+
+        This respawns stock / resets the scene for the next demo loop.
+        """
+        self._placed_ids.clear()
+        self._held_object = None
+        for obj_info in self._object_nodes:
+            try:
+                node = obj_info["node"]
+                node.getField("translation").setSFVec3f(list(obj_info["initial_pos"]))
+            except Exception:
+                pass

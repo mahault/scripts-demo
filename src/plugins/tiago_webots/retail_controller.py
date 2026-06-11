@@ -172,21 +172,37 @@ def _run_teacher(robot, timestep, name, agent_id):
     # Perimeter-style restock loop.  Stay well clear of the divider/shelves
     # by moving in orthogonal segments along the south aisle and corridor.
     waypoints = [
-        (-5.5, -1.0),   # stock room
-        (-4.9, -1.5),   # corridor entry, clear of stock_shelf & divider
-        (-4.9, -5.0),   # south of stock divider (inflated zone ends ~-4.52)
-        (-4.9, -6.0),   # align with south aisle
-        (-3.5, -6.0),   # shelf A aisle (south of cabinet)
-        (-0.25, -6.0),  # central aisle between shelf A and shelf B
-        (2.0, -6.0),    # approach counter from west
-        (3.0, -6.0),    # worker queue (west of service counter)
-        (3.0, -4.0),    # worker look/work point, north of shelf_B
-        (3.0, -6.0),    # back to south aisle
-        (-4.9, -6.0),   # west along south aisle
-        (-4.9, -5.0),   # north toward corridor
-        (-4.9, -1.5),   # corridor
-        (-5.5, -1.0),   # stock room
+        (-5.5, -1.0),   # 0 stock room
+        (-4.9, -1.5),   # 1 corridor entry, clear of stock_shelf & divider
+        (-4.9, -5.0),   # 2 south of stock divider
+        (-4.9, -7.0),   # 3 south aisle (clear of shelf A/B inflated keepout)
+        (-3.5, -7.0),   # 4 shelf A aisle
+        (-0.25, -7.0),  # 5 central aisle between shelf A and shelf B
+        (2.0, -7.0),    # 6 approach counter from west
+        (3.0, -7.0),    # 7 worker queue (south-west of service counter)
+        (3.0, -4.0),    # 8 worker look/work point, north of shelf_B
+        (3.0, -7.0),    # 9 back to south aisle
+        (-4.9, -7.0),   # 10 west along south aisle
+        (-4.9, -5.0),   # 11 north toward corridor
+        (-4.9, -1.5),   # 12 corridor
+        (-5.5, -1.0),   # 13 stock room
     ]
+
+    # Where the worker places items for each destination
+    PLACE_POSITIONS = {
+        "shelf_a": (-2.0, -5.75, 0.40),
+        "shelf_b": (1.5, -5.75, 0.40),
+        "counter": (4.5, -6.85, 0.95),
+    }
+    DESTINATION_WP = {
+        "shelf_a": 4,
+        "shelf_b": 8,
+        "counter": 7,
+    }
+    WP_NAMES = {
+        0: "stock", 4: "shelf_a", 7: "counter", 8: "shelf_b",
+    }
+
     dwell_ticks = 120   # ~2s dwell at each waypoint
     goal_tolerance = 0.6
 
@@ -198,44 +214,108 @@ def _run_teacher(robot, timestep, name, agent_id):
                            goal={"x": waypoints[0][0], "y": waypoints[0][1]},
                            params={"goal_tolerance": goal_tolerance}))
 
-    print(f"{name}: TEACHER mode — restock loop ({len(waypoints)} waypoints)")
+    # Manipulation state
+    holding = False
+    held_id = None
+    destination = "shelf_a"   # cycles through shelf_a / shelf_b / counter
+    action_done = False
+
+    print(f"{name}: TEACHER mode — restock loop with real item transport")
     tick_count = 0
     state = "NAV"
     loop_count = 0
+
+    def pick_from_stock():
+        """Grasp the next available stock item, respawning if stock is empty."""
+        nonlocal holding, held_id
+        obj_id = sensors.find_object_in_region("stock")
+        if obj_id is None:
+            # Respawn scene so the demo can run indefinitely
+            sensors.reset_all_objects()
+            obj_id = sensors.find_object_in_region("stock")
+        if obj_id is None:
+            return False
+        sensors.set_manipulation_target(obj_id)
+        if sensors.supervisor_grasp(obj_id):
+            holding = True
+            held_id = obj_id
+            print(f"{name}: GRASPED {obj_id}")
+            return True
+        return False
+
+    def place_at_destination():
+        """Release the currently held item at the active destination."""
+        nonlocal holding, held_id
+        if not holding or held_id is None:
+            return False
+        pos = PLACE_POSITIONS[destination]
+        sensors.set_manipulation_target(held_id)
+        if sensors.supervisor_release(pos):
+            print(f"{name}: PLACED {held_id} at {destination} {pos}")
+            holding = False
+            held_id = None
+            return True
+        return False
 
     while robot.step(timestep) != -1:
         raw = sensors.read()
         pb = PerceptBundle(t=robot.getTime(), world=raw)
         pose = raw.get("robot_pose", (0, 0, 0, 0))
 
+        # Keep any held object attached to the gripper while moving
+        if holding:
+            sensors.update_held_position()
+
         if dwell_remaining > 0:
             driver.stop()
-            # Simulate arm work
-            if dwell_remaining == dwell_ticks // 2:
-                if wp_idx == 0:
-                    driver.extend_arm()   # "pick" at stock
-                elif wp_idx in (1, 2):
-                    driver.extend_arm()   # "place" at shelf
-                elif wp_idx == 3:
-                    driver.set_head_pan_tilt(0.0, 0.3)  # look at counter
+
+            # Perform one pick/place action per dwell, halfway through
+            if dwell_remaining == dwell_ticks // 2 and not action_done:
+                action_done = True
+                at_stock = wp_idx == 0
+                at_dest = wp_idx == DESTINATION_WP[destination]
+
+                if at_stock and not holding:
+                    driver.open_gripper()
+                    driver.extend_arm()
+                    if pick_from_stock():
+                        driver.close_gripper()
+                elif at_dest and holding:
+                    driver.open_gripper()
+                    driver.extend_arm()
+                    if place_at_destination():
+                        driver.close_gripper()
+                else:
+                    # No real manipulation at this waypoint; just gesture
+                    driver.extend_arm()
+
             if dwell_remaining == dwell_ticks // 4:
                 driver.retract_arm()
+                driver.close_gripper()
+
             dwell_remaining -= 1
             state = f"WORK({dwell_remaining})"
+
             if dwell_remaining == 0:
                 wp_idx = (wp_idx + 1) % len(waypoints)
                 wx, wy = waypoints[wp_idx]
                 nav.start(SkillRequest(skill="navigate",
                                        goal={"x": wx, "y": wy},
                                        params={"goal_tolerance": goal_tolerance}))
+                action_done = False
+
                 if wp_idx == 0:
                     loop_count += 1
+                    # Cycle destination for the next loop
+                    destination = ["shelf_a", "shelf_b", "counter"][loop_count % 3]
         else:
             status = nav.tick(pb, dummy_update)
             state = f"NAV({status})"
             if status == "SUCCESS":
                 dwell_remaining = dwell_ticks
-                print(f"{name}: arrived at wp={wp_idx} pos=({pose[0]:.2f},{pose[1]:.2f}) — working")
+                wp_name = WP_NAMES.get(wp_idx, "transit")
+                print(f"{name}: arrived at wp={wp_idx} ({wp_name}) "
+                      f"pos=({pose[0]:.2f},{pose[1]:.2f}) holding={holding}")
 
         # Publish HUD state
         if tick_count % 10 == 0:
@@ -244,6 +324,9 @@ def _run_teacher(robot, timestep, name, agent_id):
                     "waypoint": wp_idx,
                     "loop": loop_count,
                     "state": state,
+                    "holding": holding,
+                    "held_id": held_id,
+                    "destination": destination,
                 }))
             except Exception:
                 pass
@@ -251,7 +334,8 @@ def _run_teacher(robot, timestep, name, agent_id):
         tick_count += 1
         if tick_count % 60 == 0:
             print(f"{name}: t={robot.getTime():.1f} pos=({pose[0]:.2f},{pose[1]:.2f}) "
-                  f"wp={wp_idx} state={state} loops={loop_count}")
+                  f"wp={wp_idx} state={state} loops={loop_count} "
+                  f"dest={destination} holding={holding}")
 
 
 # ============================================================================
@@ -266,12 +350,12 @@ def _run_customer(robot, timestep, name, agent_id):
     # Customer patrol: entrance → counter → shelf A → exit → loop
     # Orthogonal patrol that stays well outside shelf/counter footprints.
     waypoints = [
-        (0.0, -8.5),    # exit/entrance (start)
-        (4.0, -6.0),    # customer queue (in front of service counter)
-        (4.0, -4.0),    # north-east of shelf_B
-        (-3.5, -4.0),   # central aisle north of shelves
-        (-3.5, -6.0),   # south-west of shelf_A
-        (0.0, -8.5),    # exit/entrance
+        (0.0, -8.5),    # 0 exit/entrance (start)
+        (4.0, -6.0),    # 1 customer queue (in front of service counter)
+        (4.0, -4.0),    # 2 north-east of shelf_B
+        (-3.5, -4.0),   # 3 central aisle north of shelves
+        (-3.5, -6.0),   # 4 south-west of shelf_A
+        (0.0, -8.5),    # 5 exit/entrance
     ]
     dwell_ticks = 180
     goal_tolerance = 0.5
@@ -284,17 +368,75 @@ def _run_customer(robot, timestep, name, agent_id):
                            goal={"x": waypoints[0][0], "y": waypoints[0][1]},
                            params={"goal_tolerance": goal_tolerance}))
 
-    print(f"{name}: CUSTOMER mode — patrol ({len(waypoints)} waypoints)")
+    # Basket shopping state
+    holding_basket = False
+    basket_id = None
+    action_done = False
+
+    print(f"{name}: CUSTOMER mode — shopping patrol with basket")
     tick_count = 0
     state = "NAV"
+
+    def grab_basket():
+        """Grasp the shopping basket from the counter."""
+        nonlocal holding_basket, basket_id
+        bid = sensors.find_object_by_type("Basket")
+        if bid is None:
+            return False
+        sensors.set_manipulation_target(bid)
+        if sensors.supervisor_grasp(bid):
+            holding_basket = True
+            basket_id = bid
+            print(f"{name}: PICKED UP {bid}")
+            return True
+        return False
+
+    def drop_basket():
+        """Leave the basket near the exit."""
+        nonlocal holding_basket, basket_id
+        if not holding_basket or basket_id is None:
+            return False
+        sensors.set_manipulation_target(basket_id)
+        if sensors.supervisor_release((0.5, -8.5, 0.05)):
+            print(f"{name}: DROPPED {basket_id} at exit")
+            holding_basket = False
+            basket_id = None
+            return True
+        return False
 
     while robot.step(timestep) != -1:
         raw = sensors.read()
         pb = PerceptBundle(t=robot.getTime(), world=raw)
         pose = raw.get("robot_pose", (0, 0, 0, 0))
 
+        # Keep the carried basket attached to the gripper
+        if holding_basket:
+            sensors.update_held_position()
+
         if dwell_remaining > 0:
             driver.stop()
+
+            # Pick up / drop basket once per dwell, halfway through
+            if dwell_remaining == dwell_ticks // 2 and not action_done:
+                action_done = True
+                if wp_idx == 1 and not holding_basket:
+                    driver.open_gripper()
+                    driver.extend_arm()
+                    if grab_basket():
+                        driver.close_gripper()
+                elif wp_idx == 5 and holding_basket:
+                    driver.open_gripper()
+                    driver.extend_arm()
+                    if drop_basket():
+                        driver.close_gripper()
+                else:
+                    # Browse gesture
+                    driver.set_head_pan_tilt(0.0, 0.3)
+
+            if dwell_remaining == dwell_ticks // 4:
+                driver.retract_arm()
+                driver.close_gripper()
+
             dwell_remaining -= 1
             state = f"BROWSE({dwell_remaining})"
             if dwell_remaining == 0:
@@ -303,12 +445,13 @@ def _run_customer(robot, timestep, name, agent_id):
                 nav.start(SkillRequest(skill="navigate",
                                        goal={"x": wx, "y": wy},
                                        params={"goal_tolerance": goal_tolerance}))
+                action_done = False
         else:
             status = nav.tick(pb, dummy_update)
             state = f"NAV({status})"
             if status == "SUCCESS":
                 dwell_remaining = dwell_ticks
-                print(f"{name}: arrived at wp={wp_idx} — browsing")
+                print(f"{name}: arrived at wp={wp_idx} holding={holding_basket}")
 
         # Publish HUD state
         if tick_count % 10 == 0:
@@ -316,13 +459,16 @@ def _run_customer(robot, timestep, name, agent_id):
                 self_node.getField("customData").setSFString(json.dumps({
                     "waypoint": wp_idx,
                     "state": state,
+                    "holding": holding_basket,
+                    "basket": basket_id,
                 }))
             except Exception:
                 pass
 
         tick_count += 1
         if tick_count % 60 == 0:
-            print(f"{name}: t={robot.getTime():.1f} pos=({pose[0]:.2f},{pose[1]:.2f}) wp={wp_idx}")
+            print(f"{name}: t={robot.getTime():.1f} pos=({pose[0]:.2f},{pose[1]:.2f}) "
+                  f"wp={wp_idx} holding={holding_basket}")
 
 
 # ============================================================================

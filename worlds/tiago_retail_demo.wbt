@@ -11,6 +11,9 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/tables/protos/Table.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/Chair.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/lights/protos/CeilingLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/drinks/protos/Can.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/fruits/protos/Orange.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/fruits/protos/Apple.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/pal_robotics/tiago/protos/Tiago.proto"
 
 WorldInfo {
@@ -245,6 +248,99 @@ Solid {
       geometry Box { size 1.5 1.0 0.005 }
     }
   ]
+}
+
+# =============================================
+# Grocery items
+# =============================================
+# Stock room items (on the stock shelf)
+Can {
+  translation -5.85 -2.30 0.36
+  rotation 0 0 1 0.3
+  name "ITEM_can_stock_1"
+  color 0.9 0.1 0.1
+}
+Orange {
+  translation -6.00 -2.50 0.70
+  rotation 0 0 1 0.5
+  name "ITEM_orange_stock_1"
+}
+Apple {
+  translation -6.15 -2.70 0.36
+  name "ITEM_apple_stock_1"
+}
+Can {
+  translation -5.95 -2.60 1.00
+  rotation 0 0 1 -0.4
+  name "ITEM_can_stock_2"
+  color 0.1 0.5 0.9
+}
+
+# Shelf A items (worker will restock here)
+Can {
+  translation -2.00 -5.75 0.40
+  name "ITEM_can_shelf_a_1"
+  color 1.0 0.7 0.0
+}
+Orange {
+  translation -2.00 -5.75 0.75
+  name "ITEM_orange_shelf_a_1"
+}
+
+# Shelf B items
+Can {
+  translation 1.50 -5.75 0.40
+  name "ITEM_can_shelf_b_1"
+  color 0.2 0.7 0.2
+}
+Apple {
+  translation 1.50 -5.75 0.75
+  name "ITEM_apple_shelf_b_1"
+}
+
+# Counter items (worker restocks, customer collects)
+Can {
+  translation 4.30 -6.85 0.95
+  name "ITEM_can_counter_1"
+  color 0.9 0.1 0.1
+}
+Orange {
+  translation 4.60 -6.85 0.95
+  name "ITEM_orange_counter_1"
+}
+
+# Customer shopping basket (on the counter)
+Solid {
+  translation 4.85 -7.10 0.925
+  name "BASKET_1"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.75 0.55 0.35
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box { size 0.40 0.30 0.15 }
+    }
+    Can {
+      translation -0.08 0.05 -0.025
+      name "basket_can_1"
+      color 0.1 0.5 0.9
+    }
+    Orange {
+      translation 0.08 0.05 -0.025
+      name "basket_orange_1"
+    }
+    Apple {
+      translation 0.0 -0.08 -0.025
+      name "basket_apple_1"
+    }
+  ]
+  boundingObject Box { size 0.40 0.30 0.15 }
+  physics Physics {
+    density -1
+    mass 0.1
+  }
 }
 
 # =============================================

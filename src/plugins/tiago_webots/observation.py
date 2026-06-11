@@ -28,16 +28,22 @@ from plugins.tiago_webots.segmentation_engine import (
 WAYPOINTS = {
     "stock": (-5.5, -1.0),
     "shelf_a": (-2.0, -5.0),
+    "shelf_a_aisle": (-3.5, -7.0),
     "shelf_b": (1.5, -5.0),
+    "shelf_b_north": (3.0, -4.0),
     "counter": (4.5, -7.5),
+    "counter_queue": (3.0, -7.0),
 }
 
 # Mapping from waypoint name to situation
 WAYPOINT_SITUATION = {
     "stock": "stock_zone",
     "shelf_a": "shelf_zone",
+    "shelf_a_aisle": "shelf_zone",
     "shelf_b": "shelf_zone",
+    "shelf_b_north": "shelf_zone",
     "counter": "counter_zone",
+    "counter_queue": "counter_zone",
 }
 
 ARRIVAL_THRESHOLD = 0.8
