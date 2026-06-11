@@ -117,6 +117,8 @@ The live simulation now runs end-to-end in Webots R2025a. Key geometry fixes tha
 - **No backward driving** — the low-level driver turns in place when the goal is behind, eliminating the instability that wedged robots against furniture.
 - **Agent-only reactive avoidance** — reactive repulsion is reserved for other robots; static obstacles are handled by the detour planner using the corrected furniture sizes.
 - **Real object manipulation** — `TiagoObjectSensors` discovers Can/Orange/Apple objects plus custom `Solid` items/baskets, and uses Supervisor teleportation to grasp, transport, and release them.
+- **Stable placement** — after every grasp/release/held update the object's physics is reset and it is kept upright, so items sit cleanly on shelves and counters instead of rolling or drifting.
+- **Visual-only basket contents** — the shopping basket's groceries are child shapes (not independent physical Solids), so they stay inside the basket when Customer_1 carries it.
 - **Endless restock loop** — when the stock shelf runs empty, Worker_T resets all grocery items to their initial positions so the demo never stalls.
 
 ## Troubleshooting
