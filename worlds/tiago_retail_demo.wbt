@@ -310,6 +310,8 @@ Orange {
 }
 
 # Customer shopping basket (on the counter)
+# Items are visual-only shapes so they move with the basket when it is
+# teleported by the Supervisor; physical Solids would fall out.
 Solid {
   translation 4.85 -7.10 0.925
   name "BASKET_1"
@@ -322,18 +324,42 @@ Solid {
       }
       geometry Box { size 0.40 0.30 0.15 }
     }
-    Can {
+    # Visual can (blue)
+    Shape {
       translation -0.08 0.05 -0.025
-      name "basket_can_1"
-      color 0.1 0.5 0.9
+      appearance PBRAppearance {
+        baseColor 0.1 0.5 0.9
+        roughness 0.2
+        metalness 0.8
+      }
+      geometry Cylinder {
+        height 0.12
+        radius 0.03
+      }
     }
-    Orange {
+    # Visual orange
+    Shape {
       translation 0.08 0.05 -0.025
-      name "basket_orange_1"
+      appearance PBRAppearance {
+        baseColor 1.0 0.55 0.0
+        roughness 0.6
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.05
+      }
     }
-    Apple {
+    # Visual apple
+    Shape {
       translation 0.0 -0.08 -0.025
-      name "basket_apple_1"
+      appearance PBRAppearance {
+        baseColor 0.7 0.9 0.2
+        roughness 0.4
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.05
+      }
     }
   ]
   boundingObject Box { size 0.40 0.30 0.15 }

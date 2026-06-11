@@ -188,11 +188,12 @@ def _run_teacher(robot, timestep, name, agent_id):
         (-5.5, -1.0),   # 13 stock room
     ]
 
-    # Where the worker places items for each destination
+    # Where the worker places items for each destination.
+    # z is tuned so the objects sit flush on the shelf/counter surface.
     PLACE_POSITIONS = {
-        "shelf_a": (-2.0, -5.75, 0.40),
-        "shelf_b": (1.5, -5.75, 0.40),
-        "counter": (4.5, -6.85, 0.95),
+        "shelf_a": (-2.0, -5.75, 0.41),
+        "shelf_b": (1.5, -5.75, 0.41),
+        "counter": (4.5, -6.85, 0.91),
     }
     DESTINATION_WP = {
         "shelf_a": 4,
@@ -397,7 +398,7 @@ def _run_customer(robot, timestep, name, agent_id):
         if not holding_basket or basket_id is None:
             return False
         sensors.set_manipulation_target(basket_id)
-        if sensors.supervisor_release((0.5, -8.5, 0.05)):
+        if sensors.supervisor_release((0.5, -8.5, 0.075)):
             print(f"{name}: DROPPED {basket_id} at exit")
             holding_basket = False
             basket_id = None

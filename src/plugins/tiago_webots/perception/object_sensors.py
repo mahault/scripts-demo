@@ -414,6 +414,11 @@ class TiagoObjectSensors(TiagoWebotsSensors):
                 try:
                     trans_field = node.getField("translation")
                     trans_field.setSFVec3f([gripper_x, gripper_y, gripper_z])
+                    # Keep the carried object upright and kill residual velocity
+                    rot_field = node.getField("rotation")
+                    if rot_field:
+                        rot_field.setSFRotation([0, 0, 1, 0])
+                    node.resetPhysics()
                     self._held_object = obj_info
                     return True
                 except Exception:
@@ -435,6 +440,11 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         try:
             trans_field = node.getField("translation")
             trans_field.setSFVec3f(list(position))
+            # Place upright and zero velocity so the object settles cleanly
+            rot_field = node.getField("rotation")
+            if rot_field:
+                rot_field.setSFRotation([0, 0, 1, 0])
+            node.resetPhysics()
             self._placed_ids.add(self._held_object["id"])
             self._held_object = None
             return True
@@ -456,6 +466,11 @@ class TiagoObjectSensors(TiagoWebotsSensors):
             node = self._held_object["node"]
             trans_field = node.getField("translation")
             trans_field.setSFVec3f([gripper_x, gripper_y, gripper_z])
+            # Cancel drift/roll that builds up while being carried
+            rot_field = node.getField("rotation")
+            if rot_field:
+                rot_field.setSFRotation([0, 0, 1, 0])
+            node.resetPhysics()
         except Exception:
             pass
 
