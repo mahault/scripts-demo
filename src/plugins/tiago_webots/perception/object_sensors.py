@@ -150,15 +150,23 @@ class TiagoObjectSensors(TiagoWebotsSensors):
             except Exception:
                 pass
 
-            # Try to read size field (some furniture types have it)
+            # Try to read actual dimensions from the node fields.
+            # Cabinet uses depth/outerThickness/rowsHeights/columnsWidths.
+            # Table/Wall provide a size field.
             width = props["width"]
             depth = props["depth"]
             try:
-                size_field = node.getField("size")
-                if size_field:
-                    size = size_field.getSFVec3f()
-                    width = size[0]
-                    depth = size[1]
+                if type_name == "Cabinet":
+                    depth = node.getField("depth").getSFFloat()
+                    outer_thickness = node.getField("outerThickness").getSFFloat()
+                    columns_widths = node.getField("columnsWidths").getMFFloat()
+                    width = 2.0 * outer_thickness + sum(columns_widths)
+                else:
+                    size_field = node.getField("size")
+                    if size_field:
+                        size = size_field.getSFVec3f()
+                        width = size[0]
+                        depth = size[1]
             except Exception:
                 pass
 

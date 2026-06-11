@@ -1,0 +1,341 @@
+#VRML_SIM R2025a utf8
+# Social Layer — Retail Script Learning Demo
+# A TIAGo worker robot performs a restock script.
+# A TIAGo learner robot observes, learns, and replicates it.
+# Simple customer agents create social context.
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/cabinet/protos/Cabinet.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/tables/protos/Table.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/Chair.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/lights/protos/CeilingLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/pal_robotics/tiago/protos/Tiago.proto"
+
+WorldInfo {
+  title "Social Layer — Retail Script Learning Demo"
+  basicTimeStep 16
+  contactProperties [
+    ContactProperties {
+      softCFM 0.0002
+    }
+  ]
+}
+
+# Cinematic overview camera
+Viewpoint {
+  orientation -0.55 0.45 0.70 2.1
+  position -4.5 -9.0 8.5
+  follow "Learner_L"
+  exposure 0.5
+}
+
+TexturedBackground {
+  texture "empty_office"
+  skybox FALSE
+  skyColor [0.25 0.28 0.32]
+}
+
+# Ambient light
+PointLight {
+  attenuation 0 0 1
+  intensity 8.0
+  location -3.0 -3.0 5.0
+  castShadows TRUE
+}
+PointLight {
+  attenuation 0 0 1
+  intensity 6.0
+  location 2.0 -6.0 5.0
+}
+
+# =============================================
+# Floor
+# =============================================
+Floor {
+  translation 0 -4.0 0
+  name "floor"
+  size 14 12
+  tileSize 1 1
+  appearance PBRAppearance {
+    baseColor 0.85 0.85 0.82
+    roughness 0.8
+    metalness 0
+  }
+}
+
+# =============================================
+# Walls — define a compact retail space
+# =============================================
+Wall {
+  translation 0 1.8 0
+  name "wall_north"
+  size 14 0.2 2.5
+}
+Wall {
+  translation 0 -10.0 0
+  name "wall_south"
+  size 14 0.2 2.5
+}
+Wall {
+  translation -7.0 -4.0 0
+  rotation 0 0 1 1.5708
+  name "wall_west"
+  size 12 0.2 2.5
+}
+Wall {
+  translation 7.0 -4.0 0
+  rotation 0 0 1 1.5708
+  name "wall_east"
+  size 12 0.2 2.5
+}
+
+# =============================================
+# Stock room (back-left corner)
+# =============================================
+Wall {
+  translation -4.0 -1.5 0
+  rotation 0 0 1 1.5708
+  name "stock_divider"
+  size 5.0 0.15 2.0
+}
+
+# Stock room floor marker (blue)
+Solid {
+  translation -5.5 -1.0 0.01
+  name "CUE_STOCK_ROOM"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.4 0.9
+        emissiveColor 0 0.1 0.3
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box { size 2.0 2.0 0.005 }
+    }
+  ]
+}
+
+# Stock shelves
+Cabinet {
+  translation -6.0 -2.5 0
+  rotation 0 0 1 -1.5708
+  name "stock_shelf"
+  depth 0.5
+  outerThickness 0.02
+  rowsHeights [0.3, 0.3, 0.3]
+  columnsWidths [0.8]
+  layout [
+    "Shelf (1, 1, 1, 0)"
+    "Shelf (1, 2, 1, 0)"
+    "Shelf (1, 3, 1, 0)"
+  ]
+}
+
+# =============================================
+# Sales floor — Product shelves (3 bays)
+# =============================================
+# Shelf A (left aisle)
+Cabinet {
+  translation -2.0 -5.0 0
+  rotation 0 0 1 -1.5708
+  name "shelf_A"
+  depth 0.45
+  outerThickness 0.02
+  rowsHeights [0.35, 0.35, 0.35]
+  columnsWidths [0.9, 0.9]
+  layout [
+    "Shelf (1, 1, 2, 0)"
+    "Shelf (1, 2, 2, 0)"
+    "Shelf (1, 3, 2, 0)"
+  ]
+}
+
+# Shelf A floor marker (orange)
+Solid {
+  translation -2.0 -5.0 0.01
+  name "CUE_SHELF_A"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.6 0.1
+        emissiveColor 0.3 0.1 0
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box { size 1.2 0.8 0.005 }
+    }
+  ]
+}
+
+# Shelf B (right aisle)
+Cabinet {
+  translation 1.5 -5.0 0
+  rotation 0 0 1 -1.5708
+  name "shelf_B"
+  depth 0.45
+  outerThickness 0.02
+  rowsHeights [0.35, 0.35, 0.35]
+  columnsWidths [0.9, 0.9]
+  layout [
+    "Shelf (1, 1, 2, 0)"
+    "Shelf (1, 2, 2, 0)"
+    "Shelf (1, 3, 2, 0)"
+  ]
+}
+
+# Shelf B floor marker (orange)
+Solid {
+  translation 1.5 -5.0 0.01
+  name "CUE_SHELF_B"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.6 0.1
+        emissiveColor 0.3 0.1 0
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box { size 1.2 0.8 0.005 }
+    }
+  ]
+}
+
+# =============================================
+# Service counter (front-right)
+# =============================================
+Table {
+  translation 4.5 -7.5 0
+  rotation 0 0 1 1.5708
+  name "service_counter"
+  size 2.0 0.8 0.85
+}
+
+# Counter floor marker (yellow)
+Solid {
+  translation 4.5 -7.5 0.01
+  name "CUE_COUNTER"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.85 0.2
+        emissiveColor 0.3 0.2 0
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box { size 2.2 1.0 0.005 }
+    }
+  ]
+}
+
+# Queue zone marker (cyan, in front of counter)
+Solid {
+  translation 4.5 -6.0 0.01
+  name "CUE_QUEUE_ZONE"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.8 0.8
+        emissiveColor 0 0.2 0.2
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box { size 1.5 1.0 0.005 }
+    }
+  ]
+}
+
+# =============================================
+# Entrance / Exit (front-center)
+# =============================================
+Solid {
+  translation 0.0 -8.5 0.01
+  name "CUE_ENTRANCE"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.7 0.3
+        emissiveColor 0 0.2 0.1
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box { size 1.5 0.8 0.005 }
+    }
+  ]
+}
+
+# =============================================
+# Ceiling lights
+# =============================================
+CeilingLight {
+  translation -3.0 -3.0 2.4
+  name "light_1"
+  pointLightIntensity 6
+}
+CeilingLight {
+  translation 2.0 -6.0 2.4
+  name "light_2"
+  pointLightIntensity 6
+}
+
+# =============================================
+# Worker robot — deterministic teacher
+# customData: goal_x,goal_y,alpha,agent_id
+# =============================================
+Tiago {
+  translation -5.5 -1.0 0.095
+  rotation 0 0 1 0.0
+  name "Worker_T"
+  controller "tiago_retail_demo"
+  supervisor TRUE
+  customData "-5.5,-1.0,0.0,0"
+}
+
+# =============================================
+# Learner robot — observes and learns
+# Starts outside stock room, facing the action
+# =============================================
+Tiago {
+  translation -3.0 -1.0 0.095
+  rotation 0 0 1 -1.57
+  name "Learner_L"
+  controller "tiago_retail_demo"
+  supervisor TRUE
+  customData "-3.0,-1.0,3.0,1"
+}
+
+# =============================================
+# Customer 1 — simple scripted agent
+# Uses tiago_social_layer with a simple patrol script
+# =============================================
+Tiago {
+  translation 0.0 -8.5 0.095
+  rotation 0 0 1 1.57
+  name "Customer_1"
+  controller "tiago_retail_demo"
+  supervisor TRUE
+  customData "4.5,-6.0,0.0,2"
+}
+
+# =============================================
+# HUD overlay robot — invisible Supervisor that draws labels
+# =============================================
+Robot {
+  translation 0 0 0
+  name "HUD_Robot"
+  controller "hud_overlay"
+  supervisor TRUE
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        transparency 1
+      }
+      geometry Box {
+        size 0.001 0.001 0.001
+      }
+    }
+  ]
+}

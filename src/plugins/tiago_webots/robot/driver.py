@@ -44,7 +44,12 @@ class TiagoDriver:
         self.right_motor.setVelocity(0.0)
 
     def _tuck_arm(self) -> None:
-        """Move the arm close to the body so it does not collide."""
+        """Move the arm close to the body so it does not collide.
+
+        Standard TIAGo transport pose.  It is stable, keeps the arm off the
+        floor, and folds the forearm across the chest.  Navigation must keep
+        furniture far enough away that the folded arm does not snag.
+        """
         arm_positions = {
             "arm_1_joint": 0.07,
             "arm_2_joint": 1.02,
@@ -118,10 +123,11 @@ class TiagoDriver:
     # ------------------------------------------------------------------
     # Navigation
     # ------------------------------------------------------------------
-    # Obstacle avoidance (HAIF-style repulsive forces)
-    AVOID_DIST = 0.5          # activation distance (metres)
-    K_REP = 1.0               # repulsive force gain
-    MAX_REP = 0.5             # max repulsive speed contribution
+    # Potential-field obstacle avoidance
+    AVOID_DIST = 0.8          # activation distance (metres)
+    K_REP = 1.2               # repulsive force gain
+    MAX_REP = 0.8             # max repulsive speed (m/s)
+    K_ATT = 2.0               # attractive force gain (normalised)
 
     def navigate_to_target(
         self,
@@ -133,12 +139,13 @@ class TiagoDriver:
         speed_scale: float = 1.0,
         obstacles: list | None = None,
     ) -> bool:
-        """Drive toward *target* using two-phase (rotate-then-translate)
-        differential control with reactive obstacle avoidance.
+        """Drive toward *target* using a potential-field controller.
 
-        Obstacle avoidance uses HAIF-style repulsive forces: when the
-        robot is within AVOID_DIST of an obstacle, a repulsive velocity
-        component steers it away.  Each obstacle is (x, y, radius).
+        The goal exerts an attractive force and obstacles exert repulsive
+        forces.  The robot follows the combined force vector, which naturally
+        steers it around furniture instead of getting trapped in the
+        "head-toward-goal vs steer-away-from-wall" dead-lock of the old
+        two-phase HAIF controller.  Each obstacle is (x, y, radius).
 
         Returns ``True`` when within 0.15 m of the target.
         """
@@ -150,33 +157,14 @@ class TiagoDriver:
             self.stop()
             return True
 
-        desired_heading = math.atan2(dy, dx)
-        heading_error = _normalize_angle(desired_heading - current_heading)
-
-        # Reverse if target is behind us
-        drive_backward = abs(heading_error) > math.pi / 2
-        if drive_backward:
-            heading_error = _normalize_angle(heading_error + math.pi)
-
-        angular = self.KP_HEADING * heading_error
-        angular = max(-self.MAX_ANGULAR_SPEED, min(self.MAX_ANGULAR_SPEED, angular))
-
-        # Phase 1: pure rotation when misaligned
-        if abs(heading_error) > math.radians(15):
-            linear = 0.0
+        # Attractive force toward the goal (unit magnitude, scaled by distance)
+        if distance > 0.01:
+            att_x = self.K_ATT * dx / distance
+            att_y = self.K_ATT * dy / distance
         else:
-            alignment = max(0.2, math.cos(heading_error))
-            linear = self.MAX_LINEAR_SPEED * alignment
-            if distance < 0.5:
-                linear *= distance / 0.5
+            att_x, att_y = 0.0, 0.0
 
-        # Apply speed_scale from IntentPolicy / SafetyShield
-        linear *= max(0.0, min(1.0, speed_scale))
-
-        if drive_backward:
-            linear = -linear
-
-        # --- Obstacle avoidance: repulsive forces (HAIF-style) ---
+        # Repulsive forces from inflated obstacles
         rep_x, rep_y = 0.0, 0.0
         if obstacles:
             for ox, oy, orad in obstacles:
@@ -184,30 +172,63 @@ class TiagoDriver:
                 ody = current_y - oy
                 odist = math.sqrt(odx * odx + ody * ody)
                 clearance = odist - orad
-                if clearance < self.AVOID_DIST and clearance > 0.01:
-                    # Repulsive magnitude: inverse-square, capped
+                if clearance < self.AVOID_DIST and clearance > 0.02:
                     mag = self.K_REP * (1.0 / clearance - 1.0 / self.AVOID_DIST)
                     mag = min(mag, self.MAX_REP)
-                    # Direction: away from obstacle
                     rep_x += mag * odx / odist
                     rep_y += mag * ody / odist
 
-        if abs(rep_x) > 0.01 or abs(rep_y) > 0.01:
-            # Project repulsive force onto robot's lateral axis
-            # to generate angular correction (steer away)
-            cos_h = math.cos(current_heading)
-            sin_h = math.sin(current_heading)
-            # Lateral component (perpendicular to heading)
-            rep_lateral = -rep_x * sin_h + rep_y * cos_h
-            # Longitudinal component (along heading)
-            rep_longitudinal = rep_x * cos_h + rep_y * sin_h
+        # Combined force vector determines desired heading
+        force_x = att_x + rep_x
+        force_y = att_y + rep_y
+        force_mag = math.sqrt(force_x * force_x + force_y * force_y)
 
-            angular += rep_lateral * 3.0
+        if force_mag < 0.01:
+            # Stalemate: no clear direction.  Turn in place until a gradient
+            # appears (usually caused by the goal attraction as the robot
+            # rotates).
+            self.left_motor.setVelocity(-0.5)
+            self.right_motor.setVelocity(0.5)
+            return False
+
+        desired_heading = math.atan2(force_y, force_x)
+        heading_error = _normalize_angle(desired_heading - current_heading)
+
+        # Never drive backward: if the force points behind us, turn in place
+        # until the goal is in front.  Backward motion is unstable in Webots
+        # and easily wedges the robot against furniture.
+        if abs(heading_error) > math.pi / 2:
+            linear = 0.0
+            angular = self.MAX_ANGULAR_SPEED if heading_error > 0 else -self.MAX_ANGULAR_SPEED
+        else:
+            angular = self.KP_HEADING * heading_error
             angular = max(-self.MAX_ANGULAR_SPEED, min(self.MAX_ANGULAR_SPEED, angular))
 
-            # Slow down when pushing against an obstacle
-            if rep_longitudinal < -0.1:
-                linear *= max(0.1, 1.0 + rep_longitudinal)
+            # Drive forward proportionally to how well we are aligned with the
+            # force direction.  Keep a minimum creep speed so the robot can still
+            # slide along obstacle boundaries.
+            alignment = max(0.25, math.cos(heading_error))
+            linear = self.MAX_LINEAR_SPEED * alignment
+            if distance < 0.5:
+                linear *= distance / 0.5
+
+            # Apply speed_scale from IntentPolicy / SafetyShield
+            linear *= max(0.0, min(1.0, speed_scale))
+
+        # Extra caution: slow down when an obstacle is directly ahead
+        if obstacles:
+            cos_h = math.cos(current_heading)
+            sin_h = math.sin(current_heading)
+            for ox, oy, orad in obstacles:
+                odx = ox - current_x
+                ody = oy - current_y
+                odist = math.sqrt(odx * odx + ody * ody)
+                # Projection of obstacle onto forward axis
+                forward_proj = odx * cos_h + ody * sin_h
+                lateral_proj = abs(-odx * sin_h + ody * cos_h)
+                clearance = odist - orad
+                if 0 < forward_proj < 0.8 and lateral_proj < 0.4 and clearance < 0.5:
+                    linear *= max(0.1, clearance / 0.5)
 
         # Differential-drive kinematics
         v_left = (linear - angular * self.WHEEL_BASE / 2.0) / self.WHEEL_RADIUS
@@ -215,6 +236,12 @@ class TiagoDriver:
 
         v_left = max(-self.MAX_SPEED, min(self.MAX_SPEED, v_left))
         v_right = max(-self.MAX_SPEED, min(self.MAX_SPEED, v_right))
+
+        # DEBUG: print commanded wheel velocities
+        if abs(linear) > 0.01 or abs(angular) > 0.01:
+            print(f"  [DRIVER] linear={linear:.3f} angular={angular:.3f} "
+                  f"force=({force_x:.2f},{force_y:.2f}) "
+                  f"v_left={v_left:.2f} v_right={v_right:.2f}")
 
         self.left_motor.setVelocity(v_left)
         self.right_motor.setVelocity(v_right)

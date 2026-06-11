@@ -78,6 +78,11 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Webots installer / large binaries
+webots-*_setup.exe
+*.msi
+*.dmg
+
 # IPython
 profile_default/
 ipython_config.py

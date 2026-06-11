@@ -187,6 +187,7 @@ See [docs/architecture.md](docs/architecture.md) for the full architecture docum
 
 ### Webots Simulation Validation
 - **Apartment world** — Two TIAGo robots clearing dining + coffee tables (7 objects)
+- **Retail world** — `tiago_retail_demo.wbt`: Worker_T performs a restock loop, Customer_1 patrols entrance→counter→shelves, Learner_L observes and learns the script; live navigation verified in R2025a
 - **Phase-gated controller** — `PHASE_LEVEL` env var enables phases incrementally (1→3→4→5→9→10→99)
 - **Validated phases**: Phases 1+2 (baseline deadlock), Phase 3 (augmentations, no side effects), Phase 4 (empathic modulator, violation-driven affect oscillation)
 - See [docs/phase_validation.md](docs/phase_validation.md) for predictions vs observations
