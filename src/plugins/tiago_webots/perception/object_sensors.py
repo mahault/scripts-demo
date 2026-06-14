@@ -21,6 +21,13 @@ OBJECT_TYPES = {"Orange", "Apple", "Can"}
 # This lets us place custom basket / tote / generic grocery items in the world.
 SOLID_OBJECT_PREFIXES = ("ITEM_", "BASKET_", "TOTE_")
 
+# Solid nodes with these prefixes act as containers: items dropped inside are
+# tracked with an offset and teleported to follow the container each tick.
+CONTAINER_PREFIXES = ("BASKET_", "CONTAINER_", "TRAY_", "CART_")
+
+# Default capacity for discovered containers
+DEFAULT_CONTAINER_CAPACITY = 6
+
 # Surface regions for classifying objects (apartment + retail demo worlds)
 TABLE_REGIONS = {
     "dining": {"center": (-1.074, -4.944), "radius": 1.0, "height": 0.74},
@@ -35,6 +42,12 @@ TABLE_REGIONS = {
 
 # Proximity threshold for grasping (robot must be this close to object)
 GRASP_PROXIMITY = 0.9
+
+# Height of the TIAGo gripper when the arm is extended (used for held objects)
+GRIPPER_Z = 1.05
+
+# Objects above this z are considered to be held / carried.
+_HELD_Z_THRESHOLD = 1.0
 
 # Furniture types with default footprint and physics properties
 FURNITURE_TYPES = {
@@ -60,6 +73,9 @@ _KEEPOUT_PADDING = 0.27 + 0.35
 class TiagoObjectSensors(TiagoWebotsSensors):
     """Extended sensors with object discovery and manipulation."""
 
+    # Re-export module-level threshold so instance methods can reference it.
+    _HELD_Z_THRESHOLD = _HELD_Z_THRESHOLD
+
     def __init__(self, robot, self_node, name: str) -> None:
         super().__init__(robot, self_node, name)
         self._object_nodes: List[Dict[str, Any]] = []
@@ -67,7 +83,14 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         self._placed_ids: set = set()
         self._furniture_data: List[Dict[str, Any]] = []
         self._manipulation_target_id: Optional[str] = None
+        # container_id -> {"node": ..., "capacity": int, "items": [{id, offset}]}
+        self._containers: Dict[str, Dict[str, Any]] = {}
+        # Container node names so they are not mistaken for contained items
+        # during startup discovery.
+        self._container_names: set = set()
         self._discover_objects()
+        self._discover_containers()
+        self._initialize_container_contents()
         self._discover_furniture()
 
     # ------------------------------------------------------------------
@@ -81,6 +104,7 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         data["held_object"] = self._held_object is not None
         data["held_object_id"] = self._held_object["id"] if self._held_object else None
         data["arm_at_target"] = self._check_arm_proximity()
+        data["containers"] = self._container_state()
         return data
 
     # ------------------------------------------------------------------
@@ -120,6 +144,7 @@ class TiagoObjectSensors(TiagoWebotsSensors):
 
             self._object_nodes.append({
                 "id": obj_id,
+                "name": obj_name,
                 "type": object_type,
                 "node": node,
                 "initial_pos": (pos[0], pos[1], pos[2]),
@@ -137,6 +162,48 @@ class TiagoObjectSensors(TiagoWebotsSensors):
                 if any(name.startswith(p) for p in SOLID_OBJECT_PREFIXES):
                     return True
         return False
+
+    @staticmethod
+    def _is_container(name: str) -> bool:
+        """Return True if a Solid name identifies it as a container."""
+        return any(name.startswith(p) for p in CONTAINER_PREFIXES)
+
+    def _discover_containers(self) -> None:
+        """Register dedicated container nodes (BASKET_, CONTAINER_, etc.).
+
+        Containers are discovered separately from manipulable objects so that
+        trays and baskets are not mistaken for graspable grocery items.
+        """
+        root = self.robot.getRoot()
+        children = root.getField("children")
+        for i in range(children.getCount()):
+            node = children.getMFNode(i)
+            try:
+                type_name = node.getTypeName()
+            except Exception:
+                continue
+            if type_name != "Solid":
+                continue
+            name_field = node.getField("name")
+            if not name_field:
+                continue
+            obj_name = name_field.getSFString()
+            if self._is_container(obj_name):
+                self._register_container(obj_name, node)
+
+    def _register_container(self, container_id: str, node) -> None:
+        """Track a container node and any items already inside it."""
+        try:
+            pos = node.getField("translation").getSFVec3f()
+        except Exception:
+            return
+        self._container_names.add(container_id)
+        self._containers[container_id] = {
+            "node": node,
+            "position": (pos[0], pos[1], pos[2]),
+            "capacity": DEFAULT_CONTAINER_CAPACITY,
+            "items": [],
+        }
 
     def _classify_table(self, x: float, y: float) -> str:
         """Determine which table an object belongs to based on proximity."""
@@ -236,7 +303,6 @@ class TiagoObjectSensors(TiagoWebotsSensors):
     # ------------------------------------------------------------------
 
     # Z-height thresholds for globally observable object status
-    _HELD_Z_THRESHOLD = 0.85     # gripper height ~0.95
     _TABLE_Z_TOLERANCE = 0.15    # tolerance around table surface
 
     def _read_objects(self) -> List[Dict[str, Any]]:
@@ -390,6 +456,180 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         return False
 
     # ------------------------------------------------------------------
+    # Containers
+    # ------------------------------------------------------------------
+    def _container_state(self) -> Dict[str, Any]:
+        """Return a serializable snapshot of container contents."""
+        return {
+            cid: {
+                "capacity": c["capacity"],
+                "count": len(c["items"]),
+                "items": [it["id"] for it in c["items"]],
+            }
+            for cid, c in self._containers.items()
+        }
+
+    def _container_bounds(self, container: Dict[str, Any]) -> Optional[Tuple]:
+        """Read axis-aligned half-extents of a container's bounding box."""
+        try:
+            bo_field = container["node"].getField("boundingObject")
+            bo_node = bo_field.getSFNode()
+            size_field = bo_node.getField("size")
+            size = size_field.getSFVec3f()
+            return (size[0] / 2.0, size[1] / 2.0, size[2] / 2.0)
+        except Exception:
+            return None
+
+    def _is_inside_container(
+        self,
+        position: Tuple[float, float, float],
+        container: Dict[str, Any],
+    ) -> bool:
+        """Check if a world position is inside a container's bounding box."""
+        bounds = self._container_bounds(container)
+        if bounds is None:
+            return False
+        cx, cy, cz = container["position"]
+        hx, hy, hz = bounds
+        # Treat the upper half as the usable interior (items sit above center)
+        return (
+            cx - hx <= position[0] <= cx + hx
+            and cy - hy <= position[1] <= cy + hy
+            and cz <= position[2] <= cz + hz
+        )
+
+    def _initialize_container_contents(self) -> None:
+        """After discovery, assign any items already inside containers to them."""
+        for obj_info in self._object_nodes:
+            if self._is_container(obj_info.get("name", "")):
+                continue
+            try:
+                pos = obj_info["node"].getField("translation").getSFVec3f()
+            except Exception:
+                continue
+            for cid, container in self._containers.items():
+                if self._is_inside_container(pos, container):
+                    self._add_to_container(obj_info["id"], cid)
+                    break
+
+    def _obj_position(self, obj_id: str) -> Optional[Tuple[float, float, float]]:
+        """Look up an object's current world position."""
+        for obj_info in self._object_nodes:
+            if obj_info["id"] == obj_id:
+                try:
+                    pos = obj_info["node"].getField("translation").getSFVec3f()
+                    return (pos[0], pos[1], pos[2])
+                except Exception:
+                    return None
+        return None
+
+    def _add_to_container(self, item_id: str, container_id: str) -> bool:
+        """Register an item as contained and compute its local offset."""
+        container = self._containers.get(container_id)
+        if container is None:
+            return False
+        if len(container["items"]) >= container["capacity"]:
+            return False
+        pos = self._obj_position(item_id)
+        if pos is None:
+            return False
+        cx, cy, cz = container["position"]
+        offset = (pos[0] - cx, pos[1] - cy, pos[2] - cz)
+        container["items"].append({"id": item_id, "offset": offset})
+        return True
+
+    def _remove_from_container(self, item_id: str) -> bool:
+        """Remove an item from whichever container holds it."""
+        for container in self._containers.values():
+            before = len(container["items"])
+            container["items"] = [it for it in container["items"] if it["id"] != item_id]
+            if len(container["items"]) < before:
+                return True
+        return False
+
+    def update_containers(self) -> None:
+        """Teleport contained items so they follow their container each tick."""
+        for container in self._containers.values():
+            try:
+                pos = container["node"].getField("translation").getSFVec3f()
+                container["position"] = (pos[0], pos[1], pos[2])
+            except Exception:
+                continue
+            cx, cy, cz = container["position"]
+            for item in container["items"]:
+                ox, oy, oz = item["offset"]
+                new_pos = (cx + ox, cy + oy, cz + oz)
+                if self._held_object and self._held_object["id"] == item["id"]:
+                    continue
+                for obj_info in self._object_nodes:
+                    if obj_info["id"] != item["id"]:
+                        continue
+                    try:
+                        obj_info["node"].getField("translation").setSFVec3f(list(new_pos))
+                        obj_info["node"].resetPhysics()
+                    except Exception:
+                        pass
+                    break
+
+    def find_container_in_region(self, region: str) -> Optional[str]:
+        """Return the ID of a container currently in *region*."""
+        for cid, container in self._containers.items():
+            pos = container["position"]
+            if self._classify_table(pos[0], pos[1]) == region:
+                return cid
+        return None
+
+    def find_container_by_id(self, container_id: str) -> Optional[Dict[str, Any]]:
+        """Return container info by ID."""
+        return self._containers.get(container_id)
+
+    def get_container_count(self, container_id: str) -> int:
+        """Number of items currently inside a container."""
+        container = self._containers.get(container_id)
+        return len(container["items"]) if container else 0
+
+    def _container_slot_offset(self, container: Dict[str, Any], index: int) -> Tuple[float, float]:
+        """Return a deterministic (x, y) offset for the *index* item in a container.
+
+        Lays items out in a small grid so they do not all stack at the center.
+        """
+        bounds = self._container_bounds(container)
+        hx = bounds[0] if bounds else 0.1
+        hy = bounds[1] if bounds else 0.1
+        cols = 3
+        col = index % cols
+        row = index // cols
+        x = (col - 1) * (hx * 0.8)
+        y = (row - 0.5) * (hy * 0.6)
+        return (x, y)
+
+    def supervisor_release_into_container(self, container_id: str) -> bool:
+        """Release the held object into a container at the next free slot."""
+        if self._held_object is None:
+            return False
+        container = self._containers.get(container_id)
+        if container is None:
+            return False
+        if len(container["items"]) >= container["capacity"]:
+            return False
+
+        cx, cy, cz = container["position"]
+        bounds = self._container_bounds(container)
+        hz = bounds[2] if bounds else 0.05
+        # Drop the item just above the container's interior bottom so it sits
+        # naturally (on a tray floor or in the bottom of the basket).
+        z_drop = cz - hz + 0.05
+        index = len(container["items"])
+        sx, sy = self._container_slot_offset(container, index)
+        position = (cx + sx, cy + sy, z_drop)
+
+        item_id = self._held_object["id"]
+        if not self.supervisor_release(position, mark_placed=False):
+            return False
+        self._add_to_container(item_id, container_id)
+        return True
+
+    # ------------------------------------------------------------------
     # Supervisor-based grasping
     # ------------------------------------------------------------------
     def supervisor_grasp(self, object_id: str) -> bool:
@@ -409,7 +649,7 @@ class TiagoObjectSensors(TiagoWebotsSensors):
                 heading = self._get_heading()
                 gripper_x = robot_pos[0] + 0.3 * math.cos(heading)
                 gripper_y = robot_pos[1] + 0.3 * math.sin(heading)
-                gripper_z = 0.95  # TIAGo gripper height when extended
+                gripper_z = GRIPPER_Z  # TIAGo gripper height when extended
 
                 try:
                     trans_field = node.getField("translation")
@@ -419,6 +659,10 @@ class TiagoObjectSensors(TiagoWebotsSensors):
                     if rot_field:
                         rot_field.setSFRotation([0, 0, 1, 0])
                     node.resetPhysics()
+                    # If it was sitting in a container, remove it from there
+                    self._remove_from_container(object_id)
+                    # Unfreeze in case the item was a frozen static prop
+                    self._unfreeze_object(obj_info)
                     self._held_object = obj_info
                     return True
                 except Exception:
@@ -426,8 +670,55 @@ class TiagoObjectSensors(TiagoWebotsSensors):
 
         return False
 
+    def _freeze_object(self, obj_info: Dict[str, Any]) -> bool:
+        """Make an object static so it cannot roll or jitter."""
+        try:
+            node = obj_info["node"]
+            physics_field = node.getField("physics")
+            if physics_field is None:
+                return False
+            physics_node = physics_field.getSFNode()
+            if physics_node is None:
+                return False
+            # Store the original physics node so it can be restored later.
+            if "physics_node" not in obj_info:
+                obj_info["physics_node"] = physics_node
+            # Try to disable physics entirely; fall back to zero mass.
+            try:
+                physics_field.setSFNode(None)
+            except Exception:
+                mass_field = physics_node.getField("mass")
+                if mass_field:
+                    mass_field.setSFFloat(0.0)
+            return True
+        except Exception:
+            return False
+
+    def _unfreeze_object(self, obj_info: Dict[str, Any]) -> bool:
+        """Restore an object's physics so it can be moved/carried again."""
+        try:
+            node = obj_info["node"]
+            physics_field = node.getField("physics")
+            if physics_field is None:
+                return False
+            original = obj_info.get("physics_node")
+            if original is not None:
+                physics_field.setSFNode(original)
+                return True
+            physics_node = physics_field.getSFNode()
+            if physics_node is not None:
+                mass_field = physics_node.getField("mass")
+                if mass_field:
+                    mass_field.setSFFloat(0.1)
+            return True
+        except Exception:
+            return False
+
     def supervisor_release(
-        self, position: Tuple[float, float, float],
+        self,
+        position: Tuple[float, float, float],
+        mark_placed: bool = True,
+        freeze: bool = False,
     ) -> bool:
         """Teleport held object to the specified position.
 
@@ -445,7 +736,10 @@ class TiagoObjectSensors(TiagoWebotsSensors):
             if rot_field:
                 rot_field.setSFRotation([0, 0, 1, 0])
             node.resetPhysics()
-            self._placed_ids.add(self._held_object["id"])
+            if mark_placed:
+                self._placed_ids.add(self._held_object["id"])
+            if freeze:
+                self._freeze_object(self._held_object)
             self._held_object = None
             return True
         except Exception:
@@ -460,7 +754,7 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         heading = self._get_heading()
         gripper_x = robot_pos[0] + 0.3 * math.cos(heading)
         gripper_y = robot_pos[1] + 0.3 * math.sin(heading)
-        gripper_z = 0.95
+        gripper_z = GRIPPER_Z
 
         try:
             node = self._held_object["node"]
@@ -482,13 +776,18 @@ class TiagoObjectSensors(TiagoWebotsSensors):
     def find_nearest_object(
         self, robot_pos: Tuple[float, float, float],
     ) -> Optional[str]:
-        """Find the nearest on-table object to the robot."""
+        """Find the nearest available object to the robot.
+
+        Placed items are skipped unless they are inside a container (i.e. still
+        available for picking).
+        """
         best_id = None
         best_dist = float("inf")
 
         for obj_info in self._object_nodes:
             obj_id = obj_info["id"]
-            if obj_id in self._placed_ids:
+            placed = obj_id in self._placed_ids and not self._item_in_container(obj_id)
+            if placed:
                 continue
             if self._held_object and self._held_object["id"] == obj_id:
                 continue
@@ -506,13 +805,29 @@ class TiagoObjectSensors(TiagoWebotsSensors):
 
         return best_id
 
+    def find_object_in_container(
+        self, container_id: str,
+    ) -> Optional[str]:
+        """Return the ID of an item inside a specific container."""
+        container = self._containers.get(container_id)
+        if not container or not container["items"]:
+            return None
+        return container["items"][0]["id"]
+
+    def _item_in_container(self, obj_id: str) -> bool:
+        """Return True if the item is currently inside any container."""
+        for container in self._containers.values():
+            if any(it["id"] == obj_id for it in container["items"]):
+                return True
+        return False
+
     def find_object_in_region(
         self, region: str,
     ) -> Optional[str]:
         """Return the ID of an available object currently in *region*."""
         for obj_info in self._object_nodes:
             obj_id = obj_info["id"]
-            if obj_id in self._placed_ids:
+            if obj_id in self._placed_ids and not self._item_in_container(obj_id):
                 continue
             if self._held_object and self._held_object["id"] == obj_id:
                 continue
@@ -549,9 +864,71 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         """
         self._placed_ids.clear()
         self._held_object = None
+        for container in self._containers.values():
+            container["items"] = []
         for obj_info in self._object_nodes:
             try:
                 node = obj_info["node"]
                 node.getField("translation").setSFVec3f(list(obj_info["initial_pos"]))
+                rot_field = node.getField("rotation")
+                if rot_field:
+                    rot_field.setSFRotation([0, 0, 1, 0])
+                self._unfreeze_object(obj_info)
+                node.resetPhysics()
+            except Exception:
+                pass
+        self._initialize_container_contents()
+
+    def reset_objects_to_initial(self, obj_ids: List[str]) -> None:
+        """Teleport a specific set of objects home and rebuild container tracking."""
+        ids = set(obj_ids)
+        self._placed_ids -= ids
+        if self._held_object and self._held_object["id"] in ids:
+            self._held_object = None
+        for container in self._containers.values():
+            container["items"] = [it for it in container["items"] if it["id"] not in ids]
+        for obj_info in self._object_nodes:
+            if obj_info["id"] not in ids:
+                continue
+            self._unfreeze_object(obj_info)
+            try:
+                node = obj_info["node"]
+                node.getField("translation").setSFVec3f(list(obj_info["initial_pos"]))
+                rot_field = node.getField("rotation")
+                if rot_field:
+                    rot_field.setSFRotation([0, 0, 1, 0])
+                node.resetPhysics()
+            except Exception:
+                pass
+        self._initialize_container_contents()
+
+    def reset_stock(self) -> None:
+        """Respawn only the stock-room items, leaving customer props alone."""
+        for obj_info in self._object_nodes:
+            if obj_info["table"] != "stock":
+                continue
+            obj_id = obj_info["id"]
+            if self._held_object and self._held_object["id"] == obj_id:
+                continue
+            # Don't steal an item that another robot is currently carrying or
+            # that has already been placed into a customer tray/basket.
+            if self._item_in_container(obj_id):
+                continue
+            try:
+                pos = obj_info["node"].getField("translation").getSFVec3f()
+                if pos[2] > _HELD_Z_THRESHOLD - 0.1:
+                    continue
+            except Exception:
+                pass
+            self._placed_ids.discard(obj_id)
+            self._remove_from_container(obj_id)
+            self._unfreeze_object(obj_info)
+            try:
+                node = obj_info["node"]
+                node.getField("translation").setSFVec3f(list(obj_info["initial_pos"]))
+                rot_field = node.getField("rotation")
+                if rot_field:
+                    rot_field.setSFRotation([0, 0, 1, 0])
+                node.resetPhysics()
             except Exception:
                 pass

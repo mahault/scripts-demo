@@ -188,12 +188,18 @@ def _run_teacher(robot, timestep, name, agent_id):
         (-5.5, -1.0),   # 13 stock room
     ]
 
-    # Where the worker places items for each destination.
-    # z is tuned so the objects sit flush on the shelf/counter surface.
+    # Container destinations for restocking.  Items are dropped into the
+    # matching tray; if a tray is full, the worker falls back to the raw
+    # surface position and freezes the prop so it cannot roll.
     PLACE_POSITIONS = {
-        "shelf_a": (-2.0, -5.75, 0.41),
-        "shelf_b": (1.5, -5.75, 0.41),
-        "counter": (4.5, -6.85, 0.91),
+        "shelf_a": (-2.0, -5.75, 0.43),
+        "shelf_b": (1.5, -5.75, 0.43),
+        "counter": (4.5, -6.85, 0.93),
+    }
+    DESTINATION_CONTAINER = {
+        "shelf_a": "CONTAINER_shelf_a",
+        "shelf_b": "CONTAINER_shelf_b",
+        "counter": "CONTAINER_counter",
     }
     DESTINATION_WP = {
         "shelf_a": 4,
@@ -220,6 +226,7 @@ def _run_teacher(robot, timestep, name, agent_id):
     held_id = None
     destination = "shelf_a"   # cycles through shelf_a / shelf_b / counter
     action_done = False
+    restocked_count = 0
 
     print(f"{name}: TEACHER mode — restock loop with real item transport")
     tick_count = 0
@@ -231,8 +238,9 @@ def _run_teacher(robot, timestep, name, agent_id):
         nonlocal holding, held_id
         obj_id = sensors.find_object_in_region("stock")
         if obj_id is None:
-            # Respawn scene so the demo can run indefinitely
-            sensors.reset_all_objects()
+            # Respawn only the stock items so the customer's basket/items are
+            # not teleported away mid-shopping trip.
+            sensors.reset_stock()
             obj_id = sensors.find_object_in_region("stock")
         if obj_id is None:
             return False
@@ -246,15 +254,24 @@ def _run_teacher(robot, timestep, name, agent_id):
 
     def place_at_destination():
         """Release the currently held item at the active destination."""
-        nonlocal holding, held_id
+        nonlocal holding, held_id, restocked_count
         if not holding or held_id is None:
             return False
-        pos = PLACE_POSITIONS[destination]
         sensors.set_manipulation_target(held_id)
-        if sensors.supervisor_release(pos):
-            print(f"{name}: PLACED {held_id} at {destination} {pos}")
+        cid = DESTINATION_CONTAINER[destination]
+        if sensors.supervisor_release_into_container(cid):
+            print(f"{name}: PLACED {held_id} into {cid}")
             holding = False
             held_id = None
+            restocked_count += 1
+            return True
+        # Fallback: place directly on the surface as a frozen static prop
+        pos = PLACE_POSITIONS[destination]
+        if sensors.supervisor_release(pos, freeze=True):
+            print(f"{name}: PLACED {held_id} at {destination} {pos} (frozen)")
+            holding = False
+            held_id = None
+            restocked_count += 1
             return True
         return False
 
@@ -263,9 +280,11 @@ def _run_teacher(robot, timestep, name, agent_id):
         pb = PerceptBundle(t=robot.getTime(), world=raw)
         pose = raw.get("robot_pose", (0, 0, 0, 0))
 
-        # Keep any held object attached to the gripper while moving
+        # Keep any held object attached to the gripper while moving, and keep
+        # items dropped into trays visually locked to those trays.
         if holding:
             sensors.update_held_position()
+        sensors.update_containers()
 
         if dwell_remaining > 0:
             driver.stop()
@@ -325,9 +344,11 @@ def _run_teacher(robot, timestep, name, agent_id):
                     "waypoint": wp_idx,
                     "loop": loop_count,
                     "state": state,
+                    "action": "pick" if at_stock else ("place" if at_dest else "transit"),
                     "holding": holding,
                     "held_id": held_id,
                     "destination": destination,
+                    "restocked": restocked_count,
                 }))
             except Exception:
                 pass
@@ -348,120 +369,215 @@ def _run_customer(robot, timestep, name, agent_id):
     sensors = TiagoObjectSensors(robot, self_node, name)
     nav = TiagoNavSkill(driver)
 
-    # Customer patrol: entrance → counter → shelf A → exit → loop
-    # Orthogonal patrol that stays well outside shelf/counter footprints.
-    waypoints = [
-        (0.0, -8.5),    # 0 exit/entrance (start)
-        (4.0, -6.0),    # 1 customer queue (in front of service counter)
-        (4.0, -4.0),    # 2 north-east of shelf_B
-        (-3.5, -4.0),   # 3 central aisle north of shelves
-        (-3.5, -6.0),   # 4 south-west of shelf_A
-        (0.0, -8.5),    # 5 exit/entrance
+    # Shopping sources: where the customer stands to pick items, and the
+    # container id of the tray to pick from.
+    # Service points follow the same open orthogonal corridor route that the
+    # original customer patrol used, so the robot never scrapes furniture.
+    # Grasping is done via Supervisor teleport, so the robot does not need to
+    # stand right next to the tray.
+    SOURCES = [
+        {"state": "COLLECT_COUNTER", "goal": (4.0, -6.0),
+         "container": "CONTAINER_counter", "label": "counter"},
     ]
-    dwell_ticks = 180
-    goal_tolerance = 0.5
+    BASKET_DROP_GOAL = (4.0, -6.0)
+    BASKET_PICK_GOAL = (4.0, -6.0)
+    EXIT_GOAL = (0.0, -8.5)
+    BASKET_EXIT_POS = (1.5, -8.5, 0.075)
+    TARGET_COUNT = 2
 
-    dummy_update = SkillUpdate(intent="approach", params={"speed_scale": 0.4})
+    dwell_ticks = 80
+    goal_tolerance = 0.4
+    dummy_update = SkillUpdate(intent="approach", params={"speed_scale": 0.5})
 
-    wp_idx = 0
-    dwell_remaining = 0
-    nav.start(SkillRequest(skill="navigate",
-                           goal={"x": waypoints[0][0], "y": waypoints[0][1]},
-                           params={"goal_tolerance": goal_tolerance}))
+    # Discover the basket and remember which items belong in the trays so the
+    # shopping trip can be reset cleanly after checkout.
+    basket_id = sensors.find_object_by_type("Basket")
+    # The basket's container id is its Solid node name ("BASKET_1"); the
+    # object id returned by find_object_by_type is prefixed with "basket_".
+    basket_container_id = basket_id.split("_", 1)[1] if basket_id else None
+    home_item_ids = []
+    for src in SOURCES:
+        c = sensors.find_container_by_id(src["container"])
+        if c:
+            home_item_ids.extend([it["id"] for it in c["items"]])
 
-    # Basket shopping state
+    print(f"{name}: CUSTOMER mode — fill basket ({len(home_item_ids)} items in stock)")
+
+    # State machine
+    source_index = 0
+    collected = 0
+    holding_item = False
+    held_item_id = None
     holding_basket = False
-    basket_id = None
     action_done = False
+    dwell_remaining = 0
+    state = SOURCES[0]["state"]
 
-    print(f"{name}: CUSTOMER mode — shopping patrol with basket")
+    def start_nav(x, y):
+        nav.start(SkillRequest(
+            skill="navigate",
+            goal={"x": x, "y": y},
+            params={"goal_tolerance": goal_tolerance},
+        ))
+
+    start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
+
+    def perform_action():
+        """Execute the one-shot manipulation for the current state."""
+        nonlocal state, source_index, holding_item, held_item_id, holding_basket, collected
+        if state == "DROP_BASKET":
+            if holding_item and basket_container_id:
+                driver.open_gripper()
+                driver.extend_arm()
+                if sensors.supervisor_release_into_container(basket_container_id):
+                    holding_item = False
+                    held_item_id = None
+                    collected += 1
+                    driver.close_gripper()
+                    print(f"{name}: dropped item in basket (collected {collected})")
+            return
+
+        if state == "PICKUP_BASKET":
+            if basket_id and not holding_basket and not holding_item:
+                driver.open_gripper()
+                driver.extend_arm()
+                sensors.set_manipulation_target(basket_id)
+                if sensors.supervisor_grasp(basket_id):
+                    holding_basket = True
+                    driver.close_gripper()
+                    print(f"{name}: picked up basket")
+            return
+
+        if state == "TO_EXIT":
+            if holding_basket and basket_id:
+                driver.open_gripper()
+                driver.extend_arm()
+                sensors.set_manipulation_target(basket_id)
+                if sensors.supervisor_release(BASKET_EXIT_POS):
+                    holding_basket = False
+                    driver.close_gripper()
+                    print(f"{name}: dropped basket at exit")
+            return
+
+        if state == "RESET":
+            reset_ids = list(home_item_ids)
+            if basket_id:
+                reset_ids.append(basket_id)
+            sensors.reset_objects_to_initial(reset_ids)
+            collected = 0
+            source_index = 0
+            print(f"{name}: reset shopping props")
+            return
+
+        # Collect actions (COUNTER, SHELF_A, SHELF_B)
+        src = SOURCES[source_index]
+        item_id = sensors.find_object_in_container(src["container"])
+        if item_id is not None and not holding_item:
+            driver.open_gripper()
+            driver.extend_arm()
+            sensors.set_manipulation_target(item_id)
+            if sensors.supervisor_grasp(item_id):
+                holding_item = True
+                held_item_id = item_id
+                driver.close_gripper()
+                print(f"{name}: grabbed {item_id} from {src['label']}")
+        elif item_id is None:
+            print(f"{name}: no items available in {src['label']}")
+
+    def advance_state():
+        """Decide where to go after the current dwell finishes."""
+        nonlocal state, source_index
+        if state == "DROP_BASKET":
+            source_index += 1
+            if source_index < len(SOURCES):
+                state = SOURCES[source_index]["state"]
+                start_nav(SOURCES[source_index]["goal"][0],
+                          SOURCES[source_index]["goal"][1])
+            elif collected >= TARGET_COUNT:
+                state = "PICKUP_BASKET"
+                start_nav(BASKET_PICK_GOAL[0], BASKET_PICK_GOAL[1])
+            else:
+                # Loop sources again until the basket has enough items
+                source_index = 0
+                state = SOURCES[0]["state"]
+                start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
+            return
+
+        if state.startswith("COLLECT_"):
+            state = "DROP_BASKET"
+            start_nav(BASKET_DROP_GOAL[0], BASKET_DROP_GOAL[1])
+            return
+
+        if state == "PICKUP_BASKET":
+            state = "TO_EXIT"
+            start_nav(EXIT_GOAL[0], EXIT_GOAL[1])
+            return
+
+        if state == "TO_EXIT":
+            state = "RESET"
+            start_nav(EXIT_GOAL[0], EXIT_GOAL[1])
+            return
+
+        if state == "RESET":
+            state = SOURCES[0]["state"]
+            source_index = 0
+            start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
+            return
+
     tick_count = 0
-    state = "NAV"
-
-    def grab_basket():
-        """Grasp the shopping basket from the counter."""
-        nonlocal holding_basket, basket_id
-        bid = sensors.find_object_by_type("Basket")
-        if bid is None:
-            return False
-        sensors.set_manipulation_target(bid)
-        if sensors.supervisor_grasp(bid):
-            holding_basket = True
-            basket_id = bid
-            print(f"{name}: PICKED UP {bid}")
-            return True
-        return False
-
-    def drop_basket():
-        """Leave the basket near the exit."""
-        nonlocal holding_basket, basket_id
-        if not holding_basket or basket_id is None:
-            return False
-        sensors.set_manipulation_target(basket_id)
-        if sensors.supervisor_release((0.5, -8.5, 0.075)):
-            print(f"{name}: DROPPED {basket_id} at exit")
-            holding_basket = False
-            basket_id = None
-            return True
-        return False
-
     while robot.step(timestep) != -1:
-        raw = sensors.read()
+        try:
+            raw = sensors.read()
+        except Exception as e:
+            print(f"{name}: ERROR in sensors.read(): {e}")
+            import traceback
+            traceback.print_exc()
+            continue
         pb = PerceptBundle(t=robot.getTime(), world=raw)
         pose = raw.get("robot_pose", (0, 0, 0, 0))
 
-        # Keep the carried basket attached to the gripper
-        if holding_basket:
+        # Keep the held object (item or basket) attached to the gripper, then
+        # update any contained items so they follow the basket.
+        if sensors.held_object_id:
             sensors.update_held_position()
+        sensors.update_containers()
 
         if dwell_remaining > 0:
             driver.stop()
 
-            # Pick up / drop basket once per dwell, halfway through
             if dwell_remaining == dwell_ticks // 2 and not action_done:
                 action_done = True
-                if wp_idx == 1 and not holding_basket:
-                    driver.open_gripper()
-                    driver.extend_arm()
-                    if grab_basket():
-                        driver.close_gripper()
-                elif wp_idx == 5 and holding_basket:
-                    driver.open_gripper()
-                    driver.extend_arm()
-                    if drop_basket():
-                        driver.close_gripper()
-                else:
-                    # Browse gesture
-                    driver.set_head_pan_tilt(0.0, 0.3)
+                perform_action()
 
             if dwell_remaining == dwell_ticks // 4:
                 driver.retract_arm()
                 driver.close_gripper()
 
             dwell_remaining -= 1
-            state = f"BROWSE({dwell_remaining})"
+            display_state = f"{state}({dwell_remaining})"
             if dwell_remaining == 0:
-                wp_idx = (wp_idx + 1) % len(waypoints)
-                wx, wy = waypoints[wp_idx]
-                nav.start(SkillRequest(skill="navigate",
-                                       goal={"x": wx, "y": wy},
-                                       params={"goal_tolerance": goal_tolerance}))
+                advance_state()
                 action_done = False
         else:
             status = nav.tick(pb, dummy_update)
-            state = f"NAV({status})"
+            display_state = f"NAV({status})"
             if status == "SUCCESS":
                 dwell_remaining = dwell_ticks
-                print(f"{name}: arrived at wp={wp_idx} holding={holding_basket}")
+                print(f"{name}: arrived at {state} pos=({pose[0]:.2f},{pose[1]:.2f}) "
+                      f"collected={collected}")
 
         # Publish HUD state
         if tick_count % 10 == 0:
             try:
+                basket_count = sensors.get_container_count(basket_container_id) \
+                    if basket_container_id else 0
                 self_node.getField("customData").setSFString(json.dumps({
-                    "waypoint": wp_idx,
-                    "state": state,
-                    "holding": holding_basket,
-                    "basket": basket_id,
+                    "state": display_state,
+                    "action": state,
+                    "holding_item": held_item_id,
+                    "holding_basket": holding_basket,
+                    "collected": collected,
+                    "basket_count": basket_count,
                 }))
             except Exception:
                 pass
@@ -469,7 +585,7 @@ def _run_customer(robot, timestep, name, agent_id):
         tick_count += 1
         if tick_count % 60 == 0:
             print(f"{name}: t={robot.getTime():.1f} pos=({pose[0]:.2f},{pose[1]:.2f}) "
-                  f"wp={wp_idx} holding={holding_basket}")
+                  f"state={state} collected={collected} basket={basket_container_id}")
 
 
 # ============================================================================
@@ -826,12 +942,17 @@ def main() -> None:
     print(f"{name}: RETAIL DEMO  goal=({goal_x},{goal_y}) alpha={alpha} id={agent_id}")
     print(f"{'='*60}")
 
-    if agent_id == 0:
-        _run_teacher(robot, timestep, name, agent_id)
-    elif agent_id == 1:
-        _run_learner(robot, timestep, name, agent_id, goal_x, goal_y, alpha)
-    else:
-        _run_customer(robot, timestep, name, agent_id)
+    try:
+        if agent_id == 0:
+            _run_teacher(robot, timestep, name, agent_id)
+        elif agent_id == 1:
+            _run_learner(robot, timestep, name, agent_id, goal_x, goal_y, alpha)
+        else:
+            _run_customer(robot, timestep, name, agent_id)
+    except Exception as e:
+        import traceback
+        print(f"{name}: FATAL ERROR: {e}")
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

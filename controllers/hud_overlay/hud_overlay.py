@@ -1,16 +1,24 @@
 """HUD overlay controller for the retail investor demo.
 
 Reads robot cognitive states from their customData fields and renders
-on-screen labels using Supervisor.setLabel().
+on-screen labels using Supervisor.setLabel().  Also drives a simple cinematic
+camera that follows the most interesting actor or cycles through overview shots.
 
 Screen layout (normalized 0-1 coordinates):
   Top banner    : demo phase + title
+  Top right     : live camera mode
   Bottom panel  : robot status cards
 """
 
 import json
 import math
+import os
 from controller import Supervisor
+
+
+_LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        os.pardir, os.pardir, "logs")
+os.makedirs(_LOG_DIR, exist_ok=True)
 
 
 ROBOTS = ["Worker_T", "Learner_L", "Customer_1"]
@@ -25,12 +33,39 @@ LABELS = {
     "Customer_1": "CUSTOMER",
 }
 
+# Static overview camera.  Kept simple while the demo mechanics are being
+# tuned: a fixed top-down shot that shows the whole store.
+OVERVIEW_CAMERA = {
+    "name": "OVERVIEW",
+    "position": (-4.5, -9.0, 8.5),
+    "orientation": (-0.55, 0.45, 0.70, 2.1),
+}
+
+
+def _trunc(text, length=14):
+    """Shorten long object ids so they fit on the HUD cards."""
+    if text is None:
+        return "-"
+    text = str(text)
+    if len(text) <= length:
+        return text
+    return text[:length - 1] + "…"
+
 
 def main():
     robot = Supervisor()
     timestep = int(robot.getBasicTimeStep())
 
-    # Cache node references
+    _log_path = os.path.join(_LOG_DIR, "HUD_Robot.log")
+    _log_fh = open(_log_path, "w")
+    import builtins
+    _orig_print = builtins.print
+    def _print(*args, **kwargs):
+        _orig_print(*args, **kwargs)
+        _orig_print(*args, **kwargs, file=_log_fh, flush=True)
+    builtins.print = _print
+
+    # Cache robot node references
     nodes = {}
     for name in ROBOTS:
         node = robot.getFromDef(name)
@@ -39,6 +74,30 @@ def main():
                 "node": node,
                 "field": node.getField("customData"),
             }
+
+    # Cache Viewpoint fields for cinematic switching
+    vp = robot.getFromDef("VIEWPOINT")
+    vp_follow = vp.getField("follow") if vp else None
+    vp_position = vp.getField("position") if vp else None
+    vp_orientation = vp.getField("orientation") if vp else None
+    def set_overview():
+        if vp is None:
+            print("CAMERA: no VIEWPOINT node")
+            return
+        try:
+            if vp_follow is not None:
+                vp_follow.setSFString("")
+            pos = OVERVIEW_CAMERA["position"]
+            if vp_position is not None:
+                vp_position.setSFVec3f(list(pos))
+            ori = OVERVIEW_CAMERA["orientation"]
+            if vp_orientation is not None:
+                vp_orientation.setSFRotation(list(ori))
+            print("CAMERA: locked to static overview")
+        except Exception as e:
+            print(f"CAMERA: error setting overview: {e}")
+
+    set_overview()
 
     # Label IDs — keep stable so we overwrite rather than create new
     label_id = 0
@@ -53,10 +112,6 @@ def main():
     while robot.step(timestep) != -1:
         label_id = 0  # reset and reuse IDs each frame
 
-        # --- Top banner ---
-        draw_label("SOCIAL LAYER  —  Retail Script Learning Demo", 0.02, 0.02,
-                   size=0.055, color="0xffffff", bold=True)
-
         # --- Read robot states ---
         states = {}
         for name, info in nodes.items():
@@ -68,6 +123,14 @@ def main():
                     states[name] = {}
             except Exception:
                 states[name] = {}
+
+        # --- Top banner ---
+        draw_label("SOCIAL LAYER  —  Retail Script Learning Demo", 0.02, 0.02,
+                   size=0.055, color="0xffffff", bold=True)
+
+        # --- Camera indicator ---
+        draw_label("CAM: OVERVIEW", 0.78, 0.02, size=0.04,
+                   color="0xf1c40f", bold=True)
 
         # --- Infer demo phase from Learner state ---
         learner_state = states.get("Learner_L", {})
@@ -90,7 +153,7 @@ def main():
         draw_label(phase, 0.02, 0.09, size=0.05, color=phase_color, bold=True)
 
         # --- Bottom robot cards ---
-        card_y = 0.88
+        card_y = 0.84
         card_w = 0.32
         for i, name in enumerate(ROBOTS):
             x = 0.02 + i * card_w
@@ -103,13 +166,15 @@ def main():
             # Card body lines
             lines = []
             if name == "Worker_T":
-                wp = st.get("waypoint", "-")
+                action = st.get("action", "-")
+                dest = st.get("destination", "-")
+                held = _trunc(st.get("held_id"))
+                restocked = st.get("restocked", 0)
                 loop = st.get("loop", 0)
-                state = st.get("state", "-")
                 lines = [
-                    f"Waypoint: {wp}",
-                    f"Loops: {loop}",
-                    f"State: {state}",
+                    f"Action: {action} -> {dest}",
+                    f"Holding: {held}",
+                    f"Restocked: {restocked}  (loop {loop})",
                 ]
             elif name == "Learner_L":
                 intent = st.get("intent", "-")
@@ -123,11 +188,15 @@ def main():
                     f"Pattern: {pat}",
                 ]
             elif name == "Customer_1":
-                wp = st.get("waypoint", "-")
-                state = st.get("state", "-")
+                action = st.get("action", "-")
+                held = _trunc(st.get("holding_item"))
+                basket = "yes" if st.get("holding_basket") else "no"
+                collected = st.get("collected", 0)
+                basket_count = st.get("basket_count", 0)
                 lines = [
-                    f"Waypoint: {wp}",
-                    f"State: {state}",
+                    f"Action: {action}",
+                    f"Item: {held}  Basket: {basket}",
+                    f"Collected: {collected}  In basket: {basket_count}",
                 ]
 
             for j, line in enumerate(lines):
