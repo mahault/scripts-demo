@@ -17,6 +17,10 @@ from plugins.tiago_webots.skills.nav_policy import TiagoNavIntentPolicy
 from plugins.tiago_webots.skills.handover_skill import TiagoHandoverSkill
 from plugins.tiago_webots.skills.pick_place_skill import TiagoPickPlaceSkill
 from plugins.tiago_webots.skills.gaze_skill import TiagoGazeSkill
+from plugins.tiago_webots.skills.manipulate_skill import (
+    TiagoManipulateSkill,
+    ManipulateIntentPolicy,
+)
 
 
 def register(
@@ -43,4 +47,9 @@ def register(
     # Gaze
     registry.register(SkillEntry(
         skill=TiagoGazeSkill(driver), policy=GazeIntentPolicy(),
+    ))
+    # Manipulate (arm/head gesture) — needed so the learner can replay the
+    # manipulation primitives it discovered from the worker.
+    registry.register(SkillEntry(
+        skill=TiagoManipulateSkill(driver), policy=ManipulateIntentPolicy(),
     ))

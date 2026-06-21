@@ -71,6 +71,10 @@ from plugins.tiago_webots.observation import (
     TeacherObserver,
     build_learned_sequence,
 )
+from plugins.tiago_webots.social_interactions import (
+    WorkerEncounterManager,
+    StallRecovery,
+)
 
 
 class DemoLearningScriptManager(LearningScriptManager):
@@ -180,8 +184,9 @@ def _run_teacher(robot, timestep, name, agent_id):
         (-0.25, -7.0),  # 5 central aisle between shelf A and shelf B
         (2.0, -7.0),    # 6 approach counter from west
         (3.0, -7.0),    # 7 worker queue (south-west of service counter)
-        (3.0, -4.0),    # 8 worker look/work point, north of shelf_B
-        (3.0, -7.0),    # 9 back to south aisle
+        (1.5, -7.0),    # 8 shelf B restock point — aisle, south of shelf_B
+                        #   (teleport place; never enters the shelf keepout)
+        (-1.0, -7.0),   # 9 continue west along south aisle
         (-4.9, -7.0),   # 10 west along south aisle
         (-4.9, -5.0),   # 11 north toward corridor
         (-4.9, -1.5),   # 12 corridor
@@ -210,10 +215,10 @@ def _run_teacher(robot, timestep, name, agent_id):
         0: "stock", 4: "shelf_a", 7: "counter", 8: "shelf_b",
     }
 
-    dwell_ticks = 120   # ~2s dwell at each waypoint
+    dwell_ticks = 80    # ~1.3s dwell at each waypoint
     goal_tolerance = 0.6
 
-    dummy_update = SkillUpdate(intent="approach", params={"speed_scale": 0.6})
+    dummy_update = SkillUpdate(intent="approach", params={"speed_scale": 0.8})
 
     wp_idx = 0
     dwell_remaining = 0
@@ -227,6 +232,33 @@ def _run_teacher(robot, timestep, name, agent_id):
     destination = "shelf_a"   # cycles through shelf_a / shelf_b / counter
     action_done = False
     restocked_count = 0
+    at_stock = False
+    at_dest = False
+    waiting_for_customer = False
+
+    # Give-way + greet manager: turns shopper encounters (anywhere on the
+    # floor) into a structured social act instead of a collision.
+    encounter = WorkerEncounterManager(name, customer_id="Customer_1")
+    # Self-heal wedges (e.g. high-centring on a shelf edge) the no-reverse
+    # navigator cannot escape on its own.
+    recovery = StallRecovery()
+
+    # Counter zone for yielding to the customer
+    COUNTER_CENTER = (4.5, -7.5)
+    CUSTOMER_PROXIMITY = 2.5
+    WORKER_COUNTER_PROXIMITY = 1.8
+
+    def customer_at_counter(pb):
+        for a in pb.world.get("agents", []):
+            if a.get("id") == "Customer_1":
+                ax, ay = a.get("pose", (0, 0))
+                return ((ax - COUNTER_CENTER[0])**2 +
+                        (ay - COUNTER_CENTER[1])**2)**0.5 < CUSTOMER_PROXIMITY
+        return False
+
+    def worker_near_counter(pose):
+        return ((pose[0] - COUNTER_CENTER[0])**2 +
+                (pose[1] - COUNTER_CENTER[1])**2)**0.5 < WORKER_COUNTER_PROXIMITY
 
     print(f"{name}: TEACHER mode — restock loop with real item transport")
     tick_count = 0
@@ -286,6 +318,41 @@ def _run_teacher(robot, timestep, name, agent_id):
             sensors.update_held_position()
         sensors.update_containers()
 
+        # Social interaction: give way to an approaching shopper anywhere on
+        # the floor.  The manager owns the base/arm/head while the give-way +
+        # greet plays out and reports the social act as a discrete action
+        # label, which the learner's observer segments into a primitive.
+        enc = encounter.update(pb, pose, driver)
+        if enc.active:
+            state = f"SOCIAL:{enc.action}"
+            if tick_count % 10 == 0:
+                try:
+                    self_node.getField("customData").setSFString(json.dumps({
+                        "waypoint": wp_idx,
+                        "loop": loop_count,
+                        "state": state,
+                        "action": enc.action,
+                        "holding": holding,
+                        "held_id": held_id,
+                        "destination": destination,
+                        "restocked": restocked_count,
+                    }))
+                except Exception:
+                    pass
+            tick_count += 1
+            if tick_count % 60 == 0:
+                print(f"{name}: t={robot.getTime():.1f} pos=({pose[0]:.2f},{pose[1]:.2f}) "
+                      f"wp={wp_idx} {state} (shopper give-way)")
+            continue
+        if enc.just_finished and dwell_remaining == 0:
+            # Re-issue the current nav goal so navigation resumes cleanly after
+            # the give-way maneuver moved the base.
+            wx, wy = waypoints[wp_idx]
+            nav.start(SkillRequest(skill="navigate",
+                                   goal={"x": wx, "y": wy},
+                                   params={"goal_tolerance": goal_tolerance}))
+            recovery.reset()
+
         if dwell_remaining > 0:
             driver.stop()
 
@@ -328,9 +395,21 @@ def _run_teacher(robot, timestep, name, agent_id):
                     loop_count += 1
                     # Cycle destination for the next loop
                     destination = ["shelf_a", "shelf_b", "counter"][loop_count % 3]
+        elif recovery.recovering:
+            # Breaking out of a wedge: reverse + turn, then re-issue the goal.
+            still = recovery.step(driver)
+            state = "RECOVER"
+            if not still:
+                wx, wy = waypoints[wp_idx]
+                nav.start(SkillRequest(skill="navigate",
+                                       goal={"x": wx, "y": wy},
+                                       params={"goal_tolerance": goal_tolerance}))
         else:
             status = nav.tick(pb, dummy_update)
             state = f"NAV({status})"
+            if recovery.update(pose):
+                print(f"{name}: STALL at ({pose[0]:.2f},{pose[1]:.2f}) "
+                      f"wp={wp_idx} — reverse-and-turn recovery")
             if status == "SUCCESS":
                 dwell_remaining = dwell_ticks
                 wp_name = WP_NAMES.get(wp_idx, "transit")
@@ -344,7 +423,8 @@ def _run_teacher(robot, timestep, name, agent_id):
                     "waypoint": wp_idx,
                     "loop": loop_count,
                     "state": state,
-                    "action": "pick" if at_stock else ("place" if at_dest else "transit"),
+                    "action": "wait" if waiting_for_customer else (
+                        "pick" if at_stock else ("place" if at_dest else "transit")),
                     "holding": holding,
                     "held_id": held_id,
                     "destination": destination,
@@ -375,15 +455,24 @@ def _run_customer(robot, timestep, name, agent_id):
     # original customer patrol used, so the robot never scrapes furniture.
     # Grasping is done via Supervisor teleport, so the robot does not need to
     # stand right next to the tray.
+    # Visit all three service points so the customer traverses the whole store.
+    # Goals are aisle *approach* points (south of each fixture), not the
+    # fixture centres — the shelves/counter occupy their centres, so a goal
+    # there is unreachable and the navigator stalls at the keepout boundary.
+    # Grasping teleports via the Supervisor, so standing in the aisle is fine.
     SOURCES = [
         {"state": "COLLECT_COUNTER", "goal": (4.0, -6.0),
          "container": "CONTAINER_counter", "label": "counter"},
+        {"state": "COLLECT_SHELF_B", "goal": (1.5, -6.6),
+         "container": "CONTAINER_shelf_b", "label": "shelf_b"},
+        {"state": "COLLECT_SHELF_A", "goal": (-2.0, -6.6),
+         "container": "CONTAINER_shelf_a", "label": "shelf_a"},
     ]
     BASKET_DROP_GOAL = (4.0, -6.0)
     BASKET_PICK_GOAL = (4.0, -6.0)
     EXIT_GOAL = (0.0, -8.5)
     BASKET_EXIT_POS = (1.5, -8.5, 0.075)
-    TARGET_COUNT = 2
+    TARGET_COUNT = len(SOURCES)
 
     dwell_ticks = 80
     goal_tolerance = 0.4
@@ -748,8 +837,14 @@ def _run_learner(robot, timestep, name, agent_id, goal_x, goal_y, alpha):
 
             if obs_status["loop_count"] > observed_loops:
                 observed_loops = obs_status["loop_count"]
+                bp = (max(repertoire.patterns.values(), key=lambda p: p.precision)
+                      if repertoire.patterns else None)
                 print(f"{name}: OBSERVED loop {observed_loops} complete "
-                      f"(teacher at {obs_status['last_wp']})")
+                      f"(teacher at {obs_status['last_wp']}) | "
+                      f"patterns={len(repertoire.patterns)} "
+                      f"best={bp.name if bp else '-'} "
+                      f"prec={bp.precision:.2f} traj={bp.trajectory_count if bp else 0} "
+                      f"prims={len(obs_status['discovered_primitives'])}")
 
             # Check for crystallization
             strong = [p for p in repertoire.patterns.values() if p.is_strong]
@@ -951,8 +1046,7 @@ def main() -> None:
             _run_customer(robot, timestep, name, agent_id)
     except Exception as e:
         import traceback
-        print(f"{name}: FATAL ERROR: {e}")
-        traceback.print_exc()
+        print(f"{name}: FATAL ERROR: {e}\n{traceback.format_exc()}", flush=True)
 
 
 if __name__ == "__main__":

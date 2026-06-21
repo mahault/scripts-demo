@@ -71,6 +71,21 @@ class TiagoDriver:
         self.left_motor.setVelocity(0.0)
         self.right_motor.setVelocity(0.0)
 
+    def creep(self, linear: float, angular: float = 0.0) -> None:
+        """Open-loop differential drive, used for short social maneuvers.
+
+        Unlike :meth:`navigate_to_target`, this permits reverse motion
+        (negative ``linear``) so a robot can back out of a face-to-face
+        encounter to yield — the potential-field navigator deliberately
+        never reverses, which is what wedges two robots together.
+        """
+        v_left = (linear - angular * self.WHEEL_BASE / 2.0) / self.WHEEL_RADIUS
+        v_right = (linear + angular * self.WHEEL_BASE / 2.0) / self.WHEEL_RADIUS
+        v_left = max(-self.MAX_SPEED, min(self.MAX_SPEED, v_left))
+        v_right = max(-self.MAX_SPEED, min(self.MAX_SPEED, v_right))
+        self.left_motor.setVelocity(v_left)
+        self.right_motor.setVelocity(v_right)
+
     # ------------------------------------------------------------------
     # Arm control
     # ------------------------------------------------------------------
@@ -237,11 +252,13 @@ class TiagoDriver:
         v_left = max(-self.MAX_SPEED, min(self.MAX_SPEED, v_left))
         v_right = max(-self.MAX_SPEED, min(self.MAX_SPEED, v_right))
 
-        # DEBUG: print commanded wheel velocities
-        if abs(linear) > 0.01 or abs(angular) > 0.01:
-            print(f"  [DRIVER] linear={linear:.3f} angular={angular:.3f} "
-                  f"force=({force_x:.2f},{force_y:.2f}) "
-                  f"v_left={v_left:.2f} v_right={v_right:.2f}")
+        # DEBUG: print commanded wheel velocities (throttled to avoid I/O lag)
+        if (abs(linear) > 0.01 or abs(angular) > 0.01):
+            self._debug_tick = getattr(self, "_debug_tick", 0) + 1
+            if self._debug_tick % 10 == 0:
+                print(f"  [DRIVER] linear={linear:.3f} angular={angular:.3f} "
+                      f"force=({force_x:.2f},{force_y:.2f}) "
+                      f"v_left={v_left:.2f} v_right={v_right:.2f}")
 
         self.left_motor.setVelocity(v_left)
         self.right_motor.setVelocity(v_right)

@@ -171,13 +171,23 @@ def make_restock_seed_pattern() -> ScriptPattern:
 
 
 def make_retail_repertoire_config() -> RepertoireConfig:
-    """Tuned config for faster crystallization in the demo."""
+    """Tuned config for faster crystallization in the demo.
+
+    The learner crystallises a script purely from *observation*, where the
+    trajectory free energy is high and noisy (it is reconstructed from the
+    teacher's state stream, not the learner's own controlled rollouts).  That
+    noise scales down the per-loop precision gain and even reverses it, so with
+    the original thresholds the restock pattern never reaches "strong".  For the
+    demo we relax the free-energy penalty (treat consistently-observed loops as
+    good evidence) and lower the strong threshold to what observation actually
+    reaches, so ~3 consistent loops crystallise.
+    """
     return RepertoireConfig(
-        strong_precision_threshold=1.2,
+        strong_precision_threshold=0.8,
         min_trajectories_for_promotion=3,
-        precision_gain_on_success=0.5,
+        precision_gain_on_success=0.6,
         precision_loss_on_violation=0.05,
         precision_decay_rate=0.01,
-        max_free_energy_for_promotion=100.0,
+        max_free_energy_for_promotion=1.0e6,
         max_composition_length=8,
     )

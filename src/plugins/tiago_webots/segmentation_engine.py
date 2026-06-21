@@ -38,6 +38,7 @@ class SegmentationEngine:
     # State prefixes that indicate different behavior modes
     NAV_PREFIX = "NAV"
     WORK_PREFIX = "WORK"
+    SOCIAL_PREFIX = "SOCIAL"
 
     def __init__(self, library: Optional[PrimitiveLibrary] = None) -> None:
         self._library = library
@@ -158,6 +159,13 @@ class SegmentationEngine:
         """Map teacher state string to a segment type."""
         if state.startswith(cls.NAV_PREFIX):
             return "navigate"
+
+        if state.startswith(cls.SOCIAL_PREFIX):
+            # "SOCIAL:yield" / "SOCIAL:greet" / "SOCIAL:handover" — the social
+            # act becomes its own observable segment, so the learner discovers
+            # it as a primitive (obs_yield, obs_greet, ...) in the script.
+            parts = state.split(":", 1)
+            return parts[1] if len(parts) > 1 and parts[1] else "social"
 
         if state.startswith(cls.WORK_PREFIX):
             # Parse dwell remaining from "WORK(N)"

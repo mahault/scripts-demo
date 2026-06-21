@@ -548,7 +548,13 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         return False
 
     def update_containers(self) -> None:
-        """Teleport contained items so they follow their container each tick."""
+        """Teleport contained items so they follow their container each tick.
+
+        If a container is currently being carried (its z is above the held
+        threshold), skip it.  The robot that is holding the container will move
+        its contents, so other robots do not lag one frame behind or fight
+        over the item positions.
+        """
         for container in self._containers.values():
             try:
                 pos = container["node"].getField("translation").getSFVec3f()
@@ -556,6 +562,9 @@ class TiagoObjectSensors(TiagoWebotsSensors):
             except Exception:
                 continue
             cx, cy, cz = container["position"]
+            # A held container is updated by the robot that holds it.
+            if cz > self._HELD_Z_THRESHOLD:
+                continue
             for item in container["items"]:
                 ox, oy, oz = item["offset"]
                 new_pos = (cx + ox, cy + oy, cz + oz)
@@ -624,7 +633,8 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         position = (cx + sx, cy + sy, z_drop)
 
         item_id = self._held_object["id"]
-        if not self.supervisor_release(position, mark_placed=False):
+        # Freeze the item so it does not roll or bounce out of the container.
+        if not self.supervisor_release(position, mark_placed=False, freeze=True):
             return False
         self._add_to_container(item_id, container_id)
         return True
@@ -671,7 +681,11 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         return False
 
     def _freeze_object(self, obj_info: Dict[str, Any]) -> bool:
-        """Make an object static so it cannot roll or jitter."""
+        """Make an object static so it cannot roll or jitter.
+
+        Uses zero mass instead of removing the physics node; this keeps the
+        node attached and avoids the object disappearing on reset.
+        """
         try:
             node = obj_info["node"]
             physics_field = node.getField("physics")
@@ -680,16 +694,13 @@ class TiagoObjectSensors(TiagoWebotsSensors):
             physics_node = physics_field.getSFNode()
             if physics_node is None:
                 return False
-            # Store the original physics node so it can be restored later.
-            if "physics_node" not in obj_info:
-                obj_info["physics_node"] = physics_node
-            # Try to disable physics entirely; fall back to zero mass.
-            try:
-                physics_field.setSFNode(None)
-            except Exception:
-                mass_field = physics_node.getField("mass")
-                if mass_field:
-                    mass_field.setSFFloat(0.0)
+            mass_field = physics_node.getField("mass")
+            if mass_field is None:
+                return False
+            # Remember the original mass so unfreeze can restore it cleanly.
+            if "mass" not in obj_info:
+                obj_info["mass"] = mass_field.getSFFloat()
+            mass_field.setSFFloat(0.0)
             return True
         except Exception:
             return False
@@ -701,15 +712,17 @@ class TiagoObjectSensors(TiagoWebotsSensors):
             physics_field = node.getField("physics")
             if physics_field is None:
                 return False
-            original = obj_info.get("physics_node")
-            if original is not None:
-                physics_field.setSFNode(original)
-                return True
             physics_node = physics_field.getSFNode()
-            if physics_node is not None:
-                mass_field = physics_node.getField("mass")
-                if mass_field:
-                    mass_field.setSFFloat(0.1)
+            if physics_node is None:
+                return False
+            mass_field = physics_node.getField("mass")
+            if mass_field is None:
+                return False
+            original_mass = obj_info.get("mass")
+            if original_mass is not None:
+                mass_field.setSFFloat(original_mass)
+            else:
+                mass_field.setSFFloat(0.1)
             return True
         except Exception:
             return False

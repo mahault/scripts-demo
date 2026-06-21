@@ -51,6 +51,7 @@ class ScriptRepertoire:
         config: Optional[RepertoireConfig] = None,
         initial_patterns: Optional[List[ScriptPattern]] = None,
         affinity_learner: Optional[object] = None,
+        observational_mode: bool = False,
     ) -> None:
         self._library = library
         self._config = config or RepertoireConfig()
@@ -69,6 +70,8 @@ class ScriptRepertoire:
         self._pattern_graph_size: int = 0
         # Optional affinity learner for D-matrix updates
         self._affinity_learner = affinity_learner
+        # Observational mode: skip normal precision updates, discover from trajectories
+        self._observational_mode = observational_mode
 
         if initial_patterns:
             for p in initial_patterns:
@@ -192,38 +195,48 @@ class ScriptRepertoire:
 
         # Update precision for the best-matched pattern
         dist = {}
-        if self._inference.is_initialized:
-            dist = self._inference.infer()
-            if dist:
-                best = max(dist, key=dist.get)
-                self._update_precision(best, traj)
-                self._check_consolidation(best)
+        if not self._observational_mode:
+            if self._inference.is_initialized:
+                dist = self._inference.infer()
+                if dist:
+                    best = max(dist, key=dist.get)
+                    self._update_precision(best, traj)
+                    self._check_consolidation(best)
 
-        # Also update the active pattern if known
-        if self._active_pattern_name and self._active_pattern_name in self._patterns:
-            best_inferred = max(dist, key=dist.get) if dist else None
-            if self._active_pattern_name != best_inferred:
-                self._update_precision(self._active_pattern_name, traj)
+            # Also update the active pattern if known
+            if self._active_pattern_name and self._active_pattern_name in self._patterns:
+                best_inferred = max(dist, key=dist.get) if dist else None
+                if self._active_pattern_name != best_inferred:
+                    self._update_precision(self._active_pattern_name, traj)
+                    self._check_consolidation(self._active_pattern_name)
 
-            # Compositional bookkeeping: increment composition_count for
-            # patterns sharing the same composition_signature
-            active_pat = self._patterns.get(self._active_pattern_name)
-            if active_pat is not None and active_pat.composition_signature:
-                sig = active_pat.composition_signature
-                for pat in self._patterns.values():
-                    if pat.composition_signature == sig:
-                        pat.composition_count += 1
+                # Compositional bookkeeping: increment composition_count for
+                # patterns sharing the same composition_signature
+                active_pat = self._patterns.get(self._active_pattern_name)
+                if active_pat is not None and active_pat.composition_signature:
+                    sig = active_pat.composition_signature
+                    for pat in self._patterns.values():
+                        if pat.composition_signature == sig:
+                            pat.composition_count += 1
 
-            # Strengthen sequential edges between source fragments
-            if (
-                active_pat is not None
-                and self._pattern_graph is not None
-                and active_pat.source_fragments
-            ):
-                frags = active_pat.source_fragments
-                for i in range(len(frags) - 1):
-                    if frags[i] in self._patterns and frags[i + 1] in self._patterns:
-                        self._strengthen_edge(frags[i], frags[i + 1])
+                # Strengthen sequential edges between source fragments
+                if (
+                    active_pat is not None
+                    and self._pattern_graph is not None
+                    and active_pat.source_fragments
+                ):
+                    frags = active_pat.source_fragments
+                    for i in range(len(frags) - 1):
+                        if frags[i] in self._patterns and frags[i + 1] in self._patterns:
+                            self._strengthen_edge(frags[i], frags[i + 1])
+
+        # Pattern discovery from trajectories
+        if self._observational_mode:
+            self.discover_pattern_from_trajectory(traj)
+        else:
+            # Standard mode: if no pattern matched at all, discover a new one
+            if not dist and not self._active_pattern_name:
+                self.discover_pattern_from_trajectory(traj)
 
         # Reset for next trajectory
         self._inference.reset()
@@ -232,6 +245,80 @@ class ScriptRepertoire:
     # ------------------------------------------------------------------
     # Pattern management
     # ------------------------------------------------------------------
+    def discover_pattern_from_trajectory(
+        self,
+        trajectory: ScriptTrajectory,
+        name_prefix: str = "observed",
+    ) -> Optional[str]:
+        """Create a new pattern from an observed trajectory if no existing pattern matches.
+
+        1. Extract primitive sequence from trajectory.
+        2. Check if any existing pattern has >60%% sequence overlap.
+        3. If match found: update its precision and return its name.
+        4. If no match: create a new ScriptPattern, add to repertoire,
+           update inference, and return the new name.
+        """
+        sequence = [step.primitive_name for step in trajectory.steps]
+        if not sequence:
+            return None
+
+        # Check for existing match
+        best_match: Optional[str] = None
+        best_overlap = 0.0
+        for name, pattern in self._patterns.items():
+            existing_seq = pattern.primitives_sequence
+            if not existing_seq:
+                continue
+            overlap = self._sequence_overlap(sequence, existing_seq)
+            if overlap > best_overlap and overlap > 0.6:
+                best_overlap = overlap
+                best_match = name
+
+        if best_match:
+            self._update_precision(best_match, trajectory)
+            self._check_consolidation(best_match)
+            return best_match
+
+        # Create new pattern from observed sequence
+        name = f"{name_prefix}_{'_'.join(sequence[:3])}_{abs(hash(tuple(sequence))) % 10000:04d}"
+        dominant_situation = trajectory.situation_type or "unknown"
+        if not dominant_situation and trajectory.steps:
+            dominant_situation = trajectory.steps[0].most_likely_situation
+
+        new_pattern = ScriptPattern(
+            name=name,
+            primitives_sequence=list(sequence),
+            precision=0.3,
+            trajectory_count=1,
+            mean_free_energy=trajectory.total_prediction_error or 5.0,
+            situation_affinity={dominant_situation: 1.0},
+            primitive_cluster=set(sequence),
+            is_strong=False,
+        )
+
+        self._patterns[name] = new_pattern
+        self._inference.update_patterns(self._patterns)
+        return name
+
+    @staticmethod
+    def _sequence_overlap(seq_a: List[str], seq_b: List[str]) -> float:
+        """Compute Jaccard-like overlap between two primitive sequences.
+
+        Uses longest common subsequence (LCS) normalised by the average length.
+        """
+        # LCS dynamic programming
+        m, n = len(seq_a), len(seq_b)
+        dp = [[0] * (n + 1) for _ in range(m + 1)]
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                if seq_a[i - 1] == seq_b[j - 1]:
+                    dp[i][j] = dp[i - 1][j - 1] + 1
+                else:
+                    dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+        lcs_len = dp[m][n]
+        avg_len = (m + n) / 2.0
+        return lcs_len / avg_len if avg_len > 0 else 0.0
+
     def get_strong_scripts(self) -> List[ScriptPattern]:
         """Return patterns promoted to strong scripts."""
         return [p for p in self._patterns.values() if p.is_strong]

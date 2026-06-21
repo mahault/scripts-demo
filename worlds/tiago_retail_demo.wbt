@@ -515,8 +515,9 @@ CeilingLight {
 # =============================================
 # Worker robot — deterministic teacher
 # customData: goal_x,goal_y,alpha,agent_id
+# DEF is required so the learner's observer can resolve it via getFromDef.
 # =============================================
-Tiago {
+DEF Worker_T Tiago {
   translation -5.5 -1.0 0.095
   rotation 0 0 1 0.0
   name "Worker_T"

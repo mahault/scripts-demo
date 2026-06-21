@@ -30,7 +30,7 @@ WAYPOINTS = {
     "shelf_a": (-2.0, -5.0),
     "shelf_a_aisle": (-3.5, -7.0),
     "shelf_b": (1.5, -5.0),
-    "shelf_b_north": (3.0, -4.0),
+    "shelf_b_aisle": (1.5, -7.0),
     "counter": (4.5, -7.5),
     "counter_queue": (3.0, -7.0),
 }
@@ -41,12 +41,17 @@ WAYPOINT_SITUATION = {
     "shelf_a": "shelf_zone",
     "shelf_a_aisle": "shelf_zone",
     "shelf_b": "shelf_zone",
-    "shelf_b_north": "shelf_zone",
+    "shelf_b_aisle": "shelf_zone",
     "counter": "counter_zone",
     "counter_queue": "counter_zone",
 }
 
 ARRIVAL_THRESHOLD = 0.8
+
+# Reactive social acts: discovered as primitives but excluded from the
+# crystallising restock sequence (they fire at unpredictable points).  Scripted
+# interactions such as "handover" are intentionally NOT in this set.
+REACTIVE_SEGMENTS = {"yield", "greet"}
 
 
 class TeacherObserver:
@@ -72,6 +77,7 @@ class TeacherObserver:
         self._step_count = 0
         self._started = False
         self._last_waypoint: Optional[str] = None
+        self._last_recorded_type: Optional[str] = None
 
     # ------------------------------------------------------------------
     # Teacher node access
@@ -170,6 +176,26 @@ class TeacherObserver:
             return
 
         primitive = self._segmentation.get_or_create_primitive(segment)
+
+        # Reactive social acts (giving way + greeting a passing shopper) occur
+        # at unpredictable points in the loop.  They are still *discovered* as
+        # primitives above, but we keep them out of the crystallising restock
+        # sequence — their varying insertion point would otherwise stop any
+        # stable pattern from forming.  Scripted interactions that recur at a
+        # fixed point (e.g. the counter hand-over) are NOT reactive and stay in
+        # the sequence so they become part of the learned script.
+        if segment.segment_type in REACTIVE_SEGMENTS:
+            return
+
+        # Collapse a segment that is the same type as the previously recorded
+        # one.  This happens when a navigate is split in two by an excluded
+        # reactive act (a yield), so without this a loop with three give-ways
+        # records three extra navigate steps versus a loop with one — the
+        # varying length keeps the restock sequence from ever crystallising.
+        if segment.segment_type == self._last_recorded_type:
+            return
+        self._last_recorded_type = segment.segment_type
+
         situation = WAYPOINT_SITUATION.get(current_wp or segment.waypoint or "", "approach")
         situation_belief = {situation: 1.0}
 
@@ -197,6 +223,7 @@ class TeacherObserver:
             # Reset segmentation for next loop
             self._segmentation.reset()
             self._started = False
+            self._last_recorded_type = None
 
     def reset(self) -> None:
         """Reset observation state (e.g. when switching to execution)."""
@@ -205,6 +232,7 @@ class TeacherObserver:
         self._loop_count = 0
         self._step_count = 0
         self._started = False
+        self._last_recorded_type = None
 
 
 def build_learned_sequence(repertoire: ScriptRepertoire) -> ScriptSequence | None:
