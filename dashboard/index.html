@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Retail Social-Layer Demo Dashboard</title>
+<style>
+ body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0 auto;
+        max-width: 1180px; padding: 24px; color: #1a1a1a; }
+ h1 { font-size: 26px; margin-bottom: 4px; }
+ .sub { color: #666; margin-bottom: 20px; }
+ img { width: 100%; border: 1px solid #ddd; border-radius: 8px; }
+ .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+ .card { border: 1px solid #e3e3e3; border-radius: 8px; padding: 14px; }
+ .card .n { font-size: 30px; font-weight: 700; }
+ .card .l { color: #666; font-size: 13px; }
+ ol { line-height: 1.7; } code { background:#f3f3f3; padding:1px 5px; border-radius:4px; }
+</style></head><body>
+<h1>Retail Social-Layer Demo — Run Dashboard</h1>
+<div class="sub">A TIAGo worker restocks a store while socially interacting with a
+shopper; a second TIAGo learns the worker's routine purely by watching, then replays it.</div>
+<div class="grid">
+ <div class="card"><div class="n">14</div><div class="l">worker restock loops</div></div>
+ <div class="card"><div class="n">5</div><div class="l">hand-overs at counter</div></div>
+ <div class="card"><div class="n">2</div><div class="l">wayfinding answers</div></div>
+ <div class="card"><div class="n">45</div><div class="l">give-ways to shoppers</div></div>
+ <div class="card"><div class="n">2</div><div class="l">loops the learner observed</div></div>
+ <div class="card"><div class="n">yes</div><div class="l">script crystallised</div></div>
+ <div class="card"><div class="n">16</div><div class="l">learned script steps</div></div>
+ <div class="card"><div class="n">3</div><div class="l">customer items collected</div></div>
+</div>
+<img src="dashboard.png" alt="dashboard">
+<h2>What you are looking at</h2>
+<ol>
+ <li><b>Store map</b> — routes of the worker (blue), the learner replaying the
+     learned route (green) and the customer (orange). Stars mark where the
+     hand-over (counter) and wayfinding ("where's the milk?") happen.</li>
+ <li><b>Crystallisation curve</b> — the learner's best pattern precision climbs
+     with each observed restock loop; once it passes the strong threshold the
+     routine <i>crystallises</i> into a script the learner then executes.</li>
+ <li><b>Interaction tally</b> — the four social acts the worker performs:
+     give-way, greet, hand-over, and wayfinding.</li>
+ <li><b>Loops over time</b> — the worker keeps restocking steadily.</li>
+</ol>
+</body></html>

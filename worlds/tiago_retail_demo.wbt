@@ -543,7 +543,7 @@ Tiago {
 # Customer 1 — simple scripted agent
 # Uses tiago_social_layer with a simple patrol script
 # =============================================
-Tiago {
+DEF Customer_1 Tiago {
   translation 0.0 -8.5 0.095
   rotation 0 0 1 1.57
   name "Customer_1"

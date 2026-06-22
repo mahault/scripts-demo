@@ -71,7 +71,12 @@ from plugins.tiago_webots.observation import (
     TeacherObserver,
     build_learned_sequence,
 )
-from plugins.tiago_webots.social_interactions import WorkerEncounterManager
+from plugins.tiago_webots.social_interactions import (
+    WorkerEncounterManager,
+    PRODUCT_SHELF,
+    agent_pose,
+    relative_bearing,
+)
 
 
 class DemoLearningScriptManager(LearningScriptManager):
@@ -229,6 +234,10 @@ def _run_teacher(robot, timestep, name, agent_id):
     destination = "shelf_a"   # cycles through shelf_a / shelf_b / counter
     action_done = False
     restocked_count = 0
+    handover_count = 0
+    did_handover = False
+    counter_wait = 0
+    COUNTER_MAX_WAIT = 1500   # wait this long at the counter for the shopper
     at_stock = False
     at_dest = False
     waiting_for_customer = False
@@ -236,6 +245,22 @@ def _run_teacher(robot, timestep, name, agent_id):
     # Give-way + greet manager: turns shopper encounters (anywhere on the
     # floor) into a structured social act instead of a collision.
     encounter = WorkerEncounterManager(name, customer_id="Customer_1")
+
+    # Wayfinding: read the shopper's "asking" product (published in its
+    # customData) and point to the right shelf.
+    customer_node = robot.getFromDef("Customer_1")
+    wayfinding_count = 0
+    responded_to_ask = False
+    directing_ticks = 0
+
+    def read_customer_asking():
+        if customer_node is None:
+            return ""
+        try:
+            data = json.loads(customer_node.getField("customData").getSFString())
+            return data.get("asking", "") or ""
+        except Exception:
+            return ""
 
     # Counter zone for yielding to the customer
     COUNTER_CENTER = (4.5, -7.5)
@@ -278,6 +303,25 @@ def _run_teacher(robot, timestep, name, agent_id):
             return True
         return False
 
+    def handover_to_customer():
+        """Hand the held item directly to the shopper waiting at the counter.
+
+        A distinct social act from a shelf restock: the item goes into the
+        customer's basket instead of a shelf tray.
+        """
+        nonlocal holding, held_id, restocked_count, handover_count
+        if not holding or held_id is None:
+            return False
+        sensors.set_manipulation_target(held_id)
+        if sensors.supervisor_release_into_container("BASKET_1"):
+            print(f"{name}: HANDOVER {held_id} -> Customer_1 (basket)")
+            holding = False
+            held_id = None
+            restocked_count += 1
+            handover_count += 1
+            return True
+        return False
+
     def place_at_destination():
         """Release the currently held item at the active destination."""
         nonlocal holding, held_id, restocked_count
@@ -312,12 +356,56 @@ def _run_teacher(robot, timestep, name, agent_id):
             sensors.update_held_position()
         sensors.update_containers()
 
+        # Wayfinding: when the shopper is asking about a product and is nearby,
+        # briefly turn to them and point an arm toward the right shelf.
+        asking = read_customer_asking()
+        cust_xy = agent_pose(pb, "Customer_1")
+        near_asker = (bool(asking) and cust_xy is not None
+                      and math.hypot(cust_xy[0] - pose[0],
+                                     cust_xy[1] - pose[1]) < 2.2)
+        if near_asker and not responded_to_ask:
+            responded_to_ask = True
+            directing_ticks = 50
+            wayfinding_count += 1
+            shelf, _ = PRODUCT_SHELF.get(asking, ("shelf_A", None))
+            print(f"{name}: DIRECTING Customer_1 -> {shelf} for '{asking}'")
+        if not asking:
+            responded_to_ask = False
+        if directing_ticks > 0:
+            directing_ticks -= 1
+            driver.stop()
+            if cust_xy is not None:
+                driver.set_head_pan_tilt(
+                    max(-1.3, min(1.3, relative_bearing(pose, cust_xy))), 0.0)
+            driver.extend_arm()      # point toward the product's shelf
+            state = "SOCIAL:directing"
+            if tick_count % 10 == 0:
+                try:
+                    self_node.getField("customData").setSFString(json.dumps({
+                        "waypoint": wp_idx, "loop": loop_count, "state": state,
+                        "action": "directing", "holding": holding,
+                        "held_id": held_id, "destination": destination,
+                        "restocked": restocked_count, "handovers": handover_count,
+                        "wayfinds": wayfinding_count,
+                        "tx": waypoints[wp_idx][0], "ty": waypoints[wp_idx][1],
+                    }))
+                except Exception:
+                    pass
+            if directing_ticks == 0:
+                driver.retract_arm()
+                driver.set_head_pan_tilt(0.0, 0.0)
+            tick_count += 1
+            continue
+
         # Social interaction: give way to an approaching shopper anywhere on
         # the floor.  The manager owns the base/arm/head while the give-way +
         # greet plays out and reports the social act as a discrete action
         # label, which the learner's observer segments into a primitive.
-        enc = encounter.update(pb, pose, driver)
-        if enc.active:
+        # Skip a shopper that is currently asking us for directions — it is
+        # stationary and already acknowledged; the base navigator routes around
+        # it so we keep moving instead of yielding endlessly.
+        enc = encounter.update(pb, pose, driver) if not asking else None
+        if enc is not None and enc.active:
             state = f"SOCIAL:{enc.action}"
             if tick_count % 10 == 0:
                 try:
@@ -343,7 +431,7 @@ def _run_teacher(robot, timestep, name, agent_id):
                 print(f"{name}: t={robot.getTime():.1f} pos=({pose[0]:.2f},{pose[1]:.2f}) "
                       f"wp={wp_idx} {state} (shopper give-way)")
             continue
-        if enc.just_finished and dwell_remaining == 0:
+        if enc is not None and enc.just_finished and dwell_remaining == 0:
             # Re-issue the current nav goal so navigation resumes cleanly after
             # the give-way maneuver moved the base.
             wx, wy = waypoints[wp_idx]
@@ -354,40 +442,60 @@ def _run_teacher(robot, timestep, name, agent_id):
         if dwell_remaining > 0:
             driver.stop()
 
-            # Perform one pick/place action per dwell, halfway through
-            if dwell_remaining == dwell_ticks // 2 and not action_done:
-                action_done = True
-                at_stock = wp_idx == 0
-                at_dest = wp_idx == DESTINATION_WP[destination]
-
-                if at_stock and not holding:
-                    driver.open_gripper()
-                    driver.extend_arm()
-                    if pick_from_stock():
-                        driver.close_gripper()
-                elif at_dest and holding:
-                    driver.open_gripper()
-                    driver.extend_arm()
-                    if place_at_destination():
-                        driver.close_gripper()
-                else:
-                    # No real manipulation at this waypoint; just gesture
+            # At the counter with goods to hand over, wait (arm extended,
+            # offering) for the shopper to arrive before completing the dwell,
+            # so the hand-over reliably happens rather than depending on timing.
+            counter_hold = False
+            if (wp_idx == DESTINATION_WP["counter"] and destination == "counter"
+                    and holding and not did_handover):
+                if not customer_at_counter(pb) and counter_wait < COUNTER_MAX_WAIT:
+                    counter_wait += 1
+                    counter_hold = True
                     driver.extend_arm()
 
-            if dwell_remaining == dwell_ticks // 4:
-                driver.retract_arm()
-                driver.close_gripper()
+            if not counter_hold:
+                # Perform one pick/place action per dwell, halfway through
+                if dwell_remaining == dwell_ticks // 2 and not action_done:
+                    action_done = True
+                    at_stock = wp_idx == 0
+                    at_dest = wp_idx == DESTINATION_WP[destination]
 
-            dwell_remaining -= 1
+                    if at_stock and not holding:
+                        driver.open_gripper()
+                        driver.extend_arm()
+                        if pick_from_stock():
+                            driver.close_gripper()
+                    elif at_dest and holding:
+                        driver.open_gripper()
+                        driver.extend_arm()
+                        # At the counter with a shopper present, hand the item
+                        # over directly (a social act) instead of a shelf tray.
+                        if destination == "counter" and customer_at_counter(pb):
+                            if handover_to_customer():
+                                did_handover = True
+                                driver.close_gripper()
+                        elif place_at_destination():
+                            driver.close_gripper()
+                    else:
+                        # No real manipulation at this waypoint; just gesture
+                        driver.extend_arm()
+
+                if dwell_remaining == dwell_ticks // 4:
+                    driver.retract_arm()
+                    driver.close_gripper()
+
+                dwell_remaining -= 1
             state = f"WORK({dwell_remaining})"
 
             if dwell_remaining == 0:
+                counter_wait = 0
                 wp_idx = (wp_idx + 1) % len(waypoints)
                 wx, wy = waypoints[wp_idx]
                 nav.start(SkillRequest(skill="navigate",
                                        goal={"x": wx, "y": wy},
                                        params={"goal_tolerance": goal_tolerance}))
                 action_done = False
+                did_handover = False
 
                 if wp_idx == 0:
                     loop_count += 1
@@ -409,12 +517,15 @@ def _run_teacher(robot, timestep, name, agent_id):
                     "waypoint": wp_idx,
                     "loop": loop_count,
                     "state": state,
-                    "action": "wait" if waiting_for_customer else (
-                        "pick" if at_stock else ("place" if at_dest else "transit")),
+                    "action": "handover" if did_handover else (
+                        "wait" if waiting_for_customer else (
+                            "pick" if at_stock else ("place" if at_dest else "transit"))),
                     "holding": holding,
                     "held_id": held_id,
                     "destination": destination,
                     "restocked": restocked_count,
+                    "handovers": handover_count,
+                    "wayfinds": wayfinding_count,
                     # Current target waypoint position, so the observer can learn
                     # per-destination navigate primitives and retrace the route.
                     "tx": waypoints[wp_idx][0],
@@ -437,7 +548,9 @@ def _run_customer(robot, timestep, name, agent_id):
     driver = TiagoDriver(robot)
     self_node = robot.getSelf()
     sensors = TiagoObjectSensors(robot, self_node, name)
-    nav = TiagoNavSkill(driver)
+    # allow_giveup: the shopper teleport-completes a goal it cannot reach in a
+    # tight aisle, so it never wedges and block the worker's route indefinitely.
+    nav = TiagoNavSkill(driver, allow_giveup=True)
 
     # Shopping sources: where the customer stands to pick items, and the
     # container id of the tray to pick from.
@@ -482,6 +595,16 @@ def _run_customer(robot, timestep, name, agent_id):
 
     print(f"{name}: CUSTOMER mode — fill basket ({len(home_item_ids)} items in stock)")
 
+    # Wayfinding: each trip the shopper first goes to the worker and asks where
+    # a product is.  The worker reads this product (published below) and points
+    # to the right shelf.  ASK_POINT sits on the worker's counter-approach lane
+    # so the two meet.
+    WANTED_PRODUCTS = ["milk", "orange", "can"]
+    wanted_idx = 0
+    ASK_POINT = (2.5, -7.0)
+    ask_wait = 0
+    ASK_MAX_WAIT = 1500   # give up waiting for the worker after this many ticks
+
     # State machine
     source_index = 0
     collected = 0
@@ -490,7 +613,7 @@ def _run_customer(robot, timestep, name, agent_id):
     holding_basket = False
     action_done = False
     dwell_remaining = 0
-    state = SOURCES[0]["state"]
+    state = "ASK_WORKER"
 
     def start_nav(x, y):
         nav.start(SkillRequest(
@@ -499,11 +622,13 @@ def _run_customer(robot, timestep, name, agent_id):
             params={"goal_tolerance": goal_tolerance},
         ))
 
-    start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
+    start_nav(ASK_POINT[0], ASK_POINT[1])
 
     def perform_action():
         """Execute the one-shot manipulation for the current state."""
         nonlocal state, source_index, holding_item, held_item_id, holding_basket, collected
+        if state == "ASK_WORKER":
+            return  # just waiting near the worker to be given directions
         if state == "DROP_BASKET":
             if holding_item and basket_container_id:
                 driver.open_gripper()
@@ -565,7 +690,13 @@ def _run_customer(robot, timestep, name, agent_id):
 
     def advance_state():
         """Decide where to go after the current dwell finishes."""
-        nonlocal state, source_index
+        nonlocal state, source_index, wanted_idx
+        if state == "ASK_WORKER":
+            # Done asking — start the shopping trip.
+            state = SOURCES[0]["state"]
+            source_index = 0
+            start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
+            return
         if state == "DROP_BASKET":
             source_index += 1
             if source_index < len(SOURCES):
@@ -598,9 +729,11 @@ def _run_customer(robot, timestep, name, agent_id):
             return
 
         if state == "RESET":
-            state = SOURCES[0]["state"]
+            # Next trip: ask the worker about a different product.
+            wanted_idx = (wanted_idx + 1) % len(WANTED_PRODUCTS)
+            state = "ASK_WORKER"
             source_index = 0
-            start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
+            start_nav(ASK_POINT[0], ASK_POINT[1])
             return
 
     tick_count = 0
@@ -624,19 +757,33 @@ def _run_customer(robot, timestep, name, agent_id):
         if dwell_remaining > 0:
             driver.stop()
 
-            if dwell_remaining == dwell_ticks // 2 and not action_done:
-                action_done = True
-                perform_action()
+            # Wayfinding: hold at the ask point until the worker arrives to
+            # point the way (or a max wait), so the interaction reliably fires.
+            wait_hold = False
+            if state == "ASK_WORKER":
+                wxy = agent_pose(pb, "Worker_T")
+                worker_near = (wxy is not None
+                               and math.hypot(wxy[0] - pose[0],
+                                              wxy[1] - pose[1]) < 2.3)
+                if not worker_near and ask_wait < ASK_MAX_WAIT:
+                    ask_wait += 1
+                    wait_hold = True
 
-            if dwell_remaining == dwell_ticks // 4:
-                driver.retract_arm()
-                driver.close_gripper()
+            if not wait_hold:
+                if dwell_remaining == dwell_ticks // 2 and not action_done:
+                    action_done = True
+                    perform_action()
 
-            dwell_remaining -= 1
+                if dwell_remaining == dwell_ticks // 4:
+                    driver.retract_arm()
+                    driver.close_gripper()
+
+                dwell_remaining -= 1
+                if dwell_remaining == 0:
+                    ask_wait = 0
+                    advance_state()
+                    action_done = False
             display_state = f"{state}({dwell_remaining})"
-            if dwell_remaining == 0:
-                advance_state()
-                action_done = False
         else:
             status = nav.tick(pb, dummy_update)
             display_state = f"NAV({status})"
@@ -657,6 +804,10 @@ def _run_customer(robot, timestep, name, agent_id):
                     "holding_basket": holding_basket,
                     "collected": collected,
                     "basket_count": basket_count,
+                    # The product the shopper is currently asking about (only
+                    # while at the worker); the worker reads this to point.
+                    "asking": (WANTED_PRODUCTS[wanted_idx]
+                               if state == "ASK_WORKER" else ""),
                 }))
             except Exception:
                 pass
