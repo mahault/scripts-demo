@@ -71,10 +71,7 @@ from plugins.tiago_webots.observation import (
     TeacherObserver,
     build_learned_sequence,
 )
-from plugins.tiago_webots.social_interactions import (
-    WorkerEncounterManager,
-    StallRecovery,
-)
+from plugins.tiago_webots.social_interactions import WorkerEncounterManager
 
 
 class DemoLearningScriptManager(LearningScriptManager):
@@ -239,9 +236,6 @@ def _run_teacher(robot, timestep, name, agent_id):
     # Give-way + greet manager: turns shopper encounters (anywhere on the
     # floor) into a structured social act instead of a collision.
     encounter = WorkerEncounterManager(name, customer_id="Customer_1")
-    # Self-heal wedges (e.g. high-centring on a shelf edge) the no-reverse
-    # navigator cannot escape on its own.
-    recovery = StallRecovery()
 
     # Counter zone for yielding to the customer
     COUNTER_CENTER = (4.5, -7.5)
@@ -336,6 +330,11 @@ def _run_teacher(robot, timestep, name, agent_id):
                         "held_id": held_id,
                         "destination": destination,
                         "restocked": restocked_count,
+                        # Keep the nav target published during give-ways too, so
+                        # navigate segments interrupted by a yield still learn
+                        # their destination (no goal-less primitives).
+                        "tx": waypoints[wp_idx][0],
+                        "ty": waypoints[wp_idx][1],
                     }))
                 except Exception:
                     pass
@@ -351,7 +350,6 @@ def _run_teacher(robot, timestep, name, agent_id):
             nav.start(SkillRequest(skill="navigate",
                                    goal={"x": wx, "y": wy},
                                    params={"goal_tolerance": goal_tolerance}))
-            recovery.reset()
 
         if dwell_remaining > 0:
             driver.stop()
@@ -395,21 +393,9 @@ def _run_teacher(robot, timestep, name, agent_id):
                     loop_count += 1
                     # Cycle destination for the next loop
                     destination = ["shelf_a", "shelf_b", "counter"][loop_count % 3]
-        elif recovery.recovering:
-            # Breaking out of a wedge: reverse + turn, then re-issue the goal.
-            still = recovery.step(driver)
-            state = "RECOVER"
-            if not still:
-                wx, wy = waypoints[wp_idx]
-                nav.start(SkillRequest(skill="navigate",
-                                       goal={"x": wx, "y": wy},
-                                       params={"goal_tolerance": goal_tolerance}))
         else:
             status = nav.tick(pb, dummy_update)
             state = f"NAV({status})"
-            if recovery.update(pose):
-                print(f"{name}: STALL at ({pose[0]:.2f},{pose[1]:.2f}) "
-                      f"wp={wp_idx} — reverse-and-turn recovery")
             if status == "SUCCESS":
                 dwell_remaining = dwell_ticks
                 wp_name = WP_NAMES.get(wp_idx, "transit")
@@ -429,6 +415,10 @@ def _run_teacher(robot, timestep, name, agent_id):
                     "held_id": held_id,
                     "destination": destination,
                     "restocked": restocked_count,
+                    # Current target waypoint position, so the observer can learn
+                    # per-destination navigate primitives and retrace the route.
+                    "tx": waypoints[wp_idx][0],
+                    "ty": waypoints[wp_idx][1],
                 }))
             except Exception:
                 pass

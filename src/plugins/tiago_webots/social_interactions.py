@@ -203,15 +203,26 @@ class StallRecovery:
     RECOVER_TICKS = 45      # duration of the escape maneuver
     REVERSE_SPEED = 0.3     # m/s
     TURN_SPEED = 1.0        # rad/s (turn while reversing to change approach)
+    PROGRESS_EPS = 0.5      # real escape progress between recoveries (m)
+    MAX_CONSEC = 6          # consider the goal unreachable after this many fails
 
     def __init__(self) -> None:
         self._ref: Optional[Tuple[float, float]] = None
         self._stall = 0
         self._recover = 0
+        self._consec = 0                       # escapes without real progress
+        self._progress_ref: Optional[Tuple[float, float]] = None
 
     @property
     def recovering(self) -> bool:
         return self._recover > 0
+
+    @property
+    def stuck(self) -> bool:
+        """True when repeated escapes from the same spot have failed.  Only the
+        learner acts on this (abandons the goal); the worker keeps trying, since
+        its waypoints are reachable and it must hit each one in order."""
+        return self._consec >= self.MAX_CONSEC
 
     def update(self, pose) -> bool:
         """Call once per navigating tick.  Returns True the moment a stall is
@@ -224,6 +235,15 @@ class StallRecovery:
             return False
         self._stall += 1
         if self._stall > self.STALL_TICKS:
+            # Reset the failure counter if we have escaped meaningfully since
+            # the previous stall (a fresh, unrelated wedge); otherwise we are
+            # stuck in the same spot and the count climbs toward "unreachable".
+            if (self._progress_ref is None
+                    or math.hypot(xy[0] - self._progress_ref[0],
+                                  xy[1] - self._progress_ref[1]) > self.PROGRESS_EPS):
+                self._consec = 0
+            self._progress_ref = xy
+            self._consec += 1
             self._recover = self.RECOVER_TICKS
             self._stall = 0
             return True
@@ -243,3 +263,5 @@ class StallRecovery:
         self._ref = None
         self._stall = 0
         self._recover = 0
+        self._consec = 0
+        self._progress_ref = None

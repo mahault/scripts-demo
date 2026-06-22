@@ -26,6 +26,7 @@ class BehaviorSegment:
     dominant_feature: str  # what signal triggered this segment
     situation_context: str = ""  # inferred situation
     waypoint: Optional[str] = None  # associated waypoint if any
+    target_xy: Optional[Tuple[float, float]] = None  # teacher's nav target
 
 
 class SegmentationEngine:
@@ -60,7 +61,7 @@ class SegmentationEngine:
 
         Returns a completed segment if a segment boundary was crossed.
         """
-        state, waypoint_idx = self._parse_teacher_state(teacher_state_json)
+        state, waypoint_idx, target_xy = self._parse_teacher_state(teacher_state_json)
         segment_type = self._classify_state(state, waypoint_idx)
         situation = self._waypoint_idx_to_situation(waypoint_idx)
         waypoint_name = self._waypoint_idx_to_name(waypoint_idx)
@@ -74,6 +75,7 @@ class SegmentationEngine:
                 dominant_feature="initial_observation",
                 situation_context=situation,
                 waypoint=waypoint_name,
+                target_xy=target_xy,
             )
             return None
 
@@ -90,11 +92,14 @@ class SegmentationEngine:
                 dominant_feature="state_transition",
                 situation_context=situation,
                 waypoint=waypoint_name,
+                target_xy=target_xy,
             )
             return completed
 
-        # Same segment — just update end time
+        # Same segment — update end time and keep the latest nav target
         self._current_segment.end_t = t
+        if target_xy is not None:
+            self._current_segment.target_xy = target_xy
         return None
 
     # ------------------------------------------------------------------
@@ -144,15 +149,19 @@ class SegmentationEngine:
     # Internal helpers
     # ------------------------------------------------------------------
     @staticmethod
-    def _parse_teacher_state(teacher_state_json: Optional[str]) -> Tuple[str, int]:
-        """Parse customData JSON to extract state string and waypoint index."""
+    def _parse_teacher_state(
+        teacher_state_json: Optional[str],
+    ) -> Tuple[str, int, Optional[Tuple[float, float]]]:
+        """Parse customData JSON for state string, waypoint index, nav target."""
         if not teacher_state_json:
-            return "", -1
+            return "", -1, None
         try:
             data = json.loads(teacher_state_json)
-            return data.get("state", ""), data.get("waypoint", -1)
-        except (json.JSONDecodeError, TypeError):
-            return "", -1
+            tx, ty = data.get("tx"), data.get("ty")
+            target = (float(tx), float(ty)) if tx is not None and ty is not None else None
+            return data.get("state", ""), data.get("waypoint", -1), target
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return "", -1, None
 
     @classmethod
     def _classify_state(cls, state: str, waypoint_idx: int) -> str:
@@ -210,8 +219,17 @@ class SegmentationEngine:
 
     @staticmethod
     def _segment_to_primitive_name(segment: BehaviorSegment) -> str:
-        """Generate a deterministic primitive name from segment type."""
-        return f"obs_{segment.segment_type.replace('-', '_')}"
+        """Generate a deterministic primitive name from a segment.
+
+        Navigate segments are made destination-specific (keyed by their target
+        waypoint) so the learner discovers one primitive per move and can
+        retrace the real route, instead of collapsing every navigation into a
+        single goal-less primitive.
+        """
+        base = f"obs_{segment.segment_type.replace('-', '_')}"
+        if segment.segment_type == "navigate" and segment.target_xy is not None:
+            return f"{base}_{segment.target_xy[0]:.1f}_{segment.target_xy[1]:.1f}"
+        return base
 
     @classmethod
     def _build_primitive(
@@ -220,9 +238,18 @@ class SegmentationEngine:
         """Construct a ScriptPrimitive from a behavior segment."""
         duration = max(1.0, segment.end_t - segment.start_t)
 
+        # Only the navigate segments are real base motion: give each its learned
+        # destination so the learner retraces the route.  Every other segment is
+        # a stationary dwell (arm/head gesture or a pause) and maps to the
+        # manipulate skill, which completes on its own — mapping these to a
+        # zero-speed navigate (the old behaviour) sent the learner to the origin
+        # and never returned SUCCESS.
         if segment.segment_type == "navigate":
+            goal = ({"x": segment.target_xy[0], "y": segment.target_xy[1]}
+                    if segment.target_xy is not None else {"x": 0.0, "y": 0.0})
             skill = SkillRequest(
                 skill="navigate",
+                goal=goal,
                 params={
                     "intent": "approach",
                     "speed_scale": 0.6,
@@ -230,35 +257,13 @@ class SegmentationEngine:
                 },
             )
         elif segment.segment_type == "extend-arm":
-            skill = SkillRequest(
-                skill="manipulate",
-                params={"action": "extend_arm"},
-            )
+            skill = SkillRequest(skill="manipulate", params={"action": "extend_arm"})
         elif segment.segment_type == "retract-arm":
-            skill = SkillRequest(
-                skill="manipulate",
-                params={"action": "retract_arm"},
-            )
-        elif segment.segment_type in ("wait", "settle"):
-            skill = SkillRequest(
-                skill="navigate",
-                params={"intent": "wait", "speed_scale": 0.0},
-            )
+            skill = SkillRequest(skill="manipulate", params={"action": "retract_arm"})
         elif segment.segment_type == "look-around":
-            skill = SkillRequest(
-                skill="manipulate",
-                params={"action": "look_around"},
-            )
-        elif segment.segment_type == "approach":
-            skill = SkillRequest(
-                skill="navigate",
-                params={"intent": "approach", "speed_scale": 0.3},
-            )
-        else:
-            skill = SkillRequest(
-                skill="navigate",
-                params={"intent": "wait", "speed_scale": 0.0},
-            )
+            skill = SkillRequest(skill="manipulate", params={"action": "look_around"})
+        else:  # approach / wait / settle / unknown — stationary dwell
+            skill = SkillRequest(skill="manipulate", params={"action": "wait"})
 
         return ScriptPrimitive(
             name=prim_name,

@@ -30,9 +30,11 @@ def register(
     drop_off_pos: tuple = (0.0, 0.0, 0.74),
 ) -> None:
     """Wire all TIAGo skills + policies into *registry*."""
-    # Navigation
+    # Navigation.  allow_giveup=True: this registry is used by the learner,
+    # which replays an approximate learned route and should skip a waypoint it
+    # cannot reach rather than thrash against it forever.
     registry.register(SkillEntry(
-        skill=TiagoNavSkill(driver), policy=TiagoNavIntentPolicy(),
+        skill=TiagoNavSkill(driver, allow_giveup=True), policy=TiagoNavIntentPolicy(),
     ))
     # Handover
     registry.register(SkillEntry(

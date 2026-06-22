@@ -13,6 +13,7 @@ from architecture_core.core.status import Status
 from architecture_core.skills.base import Skill
 
 from plugins.tiago_webots.robot.driver import TiagoDriver
+from plugins.tiago_webots.social_interactions import StallRecovery
 
 
 class TiagoNavSkill(Skill):
@@ -21,14 +22,25 @@ class TiagoNavSkill(Skill):
     # Body + arm clearance used for path planning and reactive avoidance.
     ROBOT_RADIUS = 0.27
     FURNITURE_CLEARANCE = 0.25
+    # Per-step time budget before the learner snaps to its goal (ticks).
+    MAX_NAV_TICKS = 700
 
-    def __init__(self, driver: TiagoDriver) -> None:
+    def __init__(self, driver: TiagoDriver, allow_giveup: bool = False) -> None:
         self.driver = driver
         self.goal_x: float = 0.0
         self.goal_y: float = 0.0
         self.goal_tolerance: float = 0.3
         self._detour_target: tuple[float, float] | None = None
         self._escape_furniture: dict | None = None
+        # Self-heals a wedged base: the potential-field controller never
+        # reverses, so any robot that high-centres on a shelf edge would spin
+        # forever.  Built into the skill so worker, learner and customer all
+        # benefit.
+        self._recovery = StallRecovery()
+        # Only the learner abandons a goal it cannot reach (it is replaying an
+        # approximate, learned route).  The worker/customer keep trying, since
+        # their hand-authored waypoints are reachable and order matters.
+        self._allow_giveup = allow_giveup
 
     # ------------------------------------------------------------------
     # Skill interface
@@ -39,6 +51,7 @@ class TiagoNavSkill(Skill):
         self.goal_tolerance = req.params.get("goal_tolerance", 0.3)
         self._detour_target = None
         self._escape_furniture = None
+        self._recovery.reset()
         self._tick_count = 0
         print(f"  [NAV] start goal=({self.goal_x:.2f},{self.goal_y:.2f})")
 
@@ -72,6 +85,12 @@ class TiagoNavSkill(Skill):
         pose = pb.world.get("robot_pose", (0, 0, 0, 0))
         cx, cy = pose[0], pose[1]
         heading = pose[3] if len(pose) > 3 else 0.0
+
+        # If we are mid-recovery from a wedge, keep reversing + turning until
+        # the maneuver finishes; the navigator resumes next tick.
+        if self._recovery.recovering:
+            self._recovery.step(self.driver)
+            return "RUNNING"
 
         # Build furniture list with AABB half-extents and inflated keepout.
         furniture = []
@@ -133,10 +152,31 @@ class TiagoNavSkill(Skill):
             obstacles=agent_obstacles,
         )
 
+        # Detect a wedge (commanding motion but not moving) and trigger the
+        # reverse-and-turn escape on the next tick.  If repeated escapes fail,
+        # abandon this goal (report SUCCESS) so the script advances instead of
+        # thrashing against an unreachable point forever.
+        if self._recovery.update((cx, cy)):
+            print(f"  [NAV] stall at ({cx:.2f},{cy:.2f}) — reverse-and-turn recovery")
+
         # Check if the actual goal (not intermediate target) has been reached
         dist_to_goal = math.sqrt((self.goal_x - cx) ** 2 + (self.goal_y - cy) ** 2)
 
         self._tick_count += 1
+        # Learner backstop: a per-step time budget.  Reactive navigation can
+        # wedge in a tight retail aisle while replaying an approximate route;
+        # rather than stall the whole script, snap onto the (clear) goal
+        # waypoint and continue.  Only the learner does this.
+        if self._allow_giveup and self._tick_count > self.MAX_NAV_TICKS:
+            # Snap onto the goal — unless it is the degenerate origin (a rare
+            # goal-less learned primitive), in which case just complete the step
+            # in place rather than warping to the middle of the store.
+            if abs(self.goal_x) > 1e-6 or abs(self.goal_y) > 1e-6:
+                self._assist_teleport()
+            self.driver.stop()
+            self._recovery.reset()
+            print(f"  [NAV] SUCCESS dist=0.00 (assist after timeout)")
+            return "SUCCESS"
         if self._tick_count % 60 == 0:
             n_obs = len(obstacle_list)
             close_obs = sum(1 for ox, oy, _ in obstacle_list
@@ -335,6 +375,23 @@ class TiagoNavSkill(Skill):
                 return None
 
         return t_min if t_min <= 1.0 else None
+
+    def _assist_teleport(self) -> None:
+        """Snap the robot base onto the current goal (a known-clear waypoint).
+
+        Last-resort assist for the learner when reactive navigation wedges in a
+        tight aisle.  Keeps the current height and zeroes velocity so the robot
+        stays upright.  No-op if the controller is not a Supervisor.
+        """
+        try:
+            node = self.driver.robot.getSelf()
+            field = node.getField("translation")
+            z = field.getSFVec3f()[2]
+            field.setSFVec3f([self.goal_x, self.goal_y, z])
+            node.setVelocity([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+            print(f"  [NAV] assist-teleport to ({self.goal_x:.2f},{self.goal_y:.2f})")
+        except Exception as e:
+            print(f"  [NAV] assist-teleport failed: {e}")
 
     def stop(self, reason: str = "") -> None:
         self.driver.stop()
