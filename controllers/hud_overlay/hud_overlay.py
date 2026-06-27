@@ -37,6 +37,7 @@ LABELS = {
 # tuned: a fixed top-down shot that shows the whole store.
 OVERVIEW_CAMERA = {
     "name": "OVERVIEW",
+    # Known-good framing of the store (oblique overhead from the SW).
     "position": (-4.5, -9.0, 8.5),
     "orientation": (-0.55, 0.45, 0.70, 2.1),
 }
@@ -99,6 +100,107 @@ def main():
 
     set_overview()
 
+    # ------------------------------------------------------------------
+    # World -> screen projection for floating speech bubbles (Sims-style).
+    # The overview camera is fixed, so we build its view basis once and project
+    # each actor's head position to normalized screen coords for setLabel.
+    # ------------------------------------------------------------------
+    def _rot_from_axis_angle(ax, ay, az, th):
+        n = math.sqrt(ax * ax + ay * ay + az * az) or 1.0
+        x, y, z = ax / n, ay / n, az / n
+        c, s = math.cos(th), math.sin(th)
+        C = 1.0 - c
+        return [
+            [c + x * x * C, x * y * C - z * s, x * z * C + y * s],
+            [y * x * C + z * s, c + y * y * C, y * z * C - x * s],
+            [z * x * C - y * s, z * y * C + x * s, c + z * z * C],
+        ]
+
+    _cam = OVERVIEW_CAMERA["position"]
+    _o = OVERVIEW_CAMERA["orientation"]
+    _R = _rot_from_axis_angle(_o[0], _o[1], _o[2], _o[3])
+    _right = (_R[0][0], _R[1][0], _R[2][0])
+    _up = (_R[0][1], _R[1][1], _R[2][1])
+    _fwd = (-_R[0][2], -_R[1][2], -_R[2][2])   # camera looks along local -z
+    _FOVX = 0.785398                            # default Webots viewpoint FOV
+    _ASPECT = 16.0 / 9.0
+    _FOVY = 2.0 * math.atan(math.tan(_FOVX / 2.0) / _ASPECT)
+    _TX, _TY = math.tan(_FOVX / 2.0), math.tan(_FOVY / 2.0)
+
+    def project(wx, wy, wz):
+        """World point -> (screen_x, screen_y) in 0..1, or None if behind/off."""
+        vx, vy, vz = wx - _cam[0], wy - _cam[1], wz - _cam[2]
+        depth = vx * _fwd[0] + vy * _fwd[1] + vz * _fwd[2]
+        if depth <= 0.05:
+            return None
+        px = vx * _right[0] + vy * _right[1] + vz * _right[2]
+        py = vx * _up[0] + vy * _up[1] + vz * _up[2]
+        sx = 0.5 + 0.5 * (px / depth) / _TX
+        sy = 0.5 - 0.5 * (py / depth) / _TY
+        if -0.1 <= sx <= 1.1 and -0.1 <= sy <= 1.1:
+            return (sx, sy)
+        return None
+
+    def head_screen(name):
+        """Screen coords just above an actor's head, or None if off-camera."""
+        info = nodes.get(name)
+        if not info:
+            return None
+        try:
+            p = info["node"].getPosition()
+            return project(p[0], p[1], p[2] + 0.75)
+        except Exception:
+            return None
+
+    # ------------------------------------------------------------------
+    # Optional movie + interactive-animation capture (RECORD_DEMO=1).
+    # Records the actual 3D scene — walking humans + TIAGo learner — for one
+    # full learn->perform arc, then stops and quits Webots.  Outputs land in
+    # dashboard/recorded_run/ for embedding in the dashboard.
+    # ------------------------------------------------------------------
+    recording = os.environ.get("RECORD_DEMO") == "1"
+    rec_dir = os.path.normpath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        os.pardir, os.pardir, "dashboard", "recorded_run"))
+    movie_path = os.path.join(rec_dir, "demo.mp4")
+    anim_path = os.path.join(rec_dir, "demo.html")
+    REC_ACCEL = int(os.environ.get("RECORD_ACCEL", "20"))   # movie speed-up
+    REC_PERFORM_S = float(os.environ.get("RECORD_PERFORM_S", "45"))  # film this
+    REC_MAX_S = float(os.environ.get("RECORD_MAX_S", "600"))         # hard cap
+    rec_stage = "off"
+    perform_s = 0.0
+    if recording:
+        os.makedirs(rec_dir, exist_ok=True)
+        try:
+            # Render as fast as possible while still drawing frames for capture.
+            robot.simulationSetMode(robot.SIMULATION_MODE_RUN)
+        except Exception as e:
+            print(f"REC: could not set run mode: {e}")
+        try:
+            robot.animationStartRecording(anim_path)
+            print(f"REC: animation recording -> {anim_path}")
+        except Exception as e:
+            print(f"REC: animation start failed: {e}")
+        try:
+            robot.movieStartRecording(
+                movie_path, width=1280, height=720, codec=0,
+                quality=80, acceleration=REC_ACCEL, caption=False)
+            print(f"REC: movie recording -> {movie_path} (accel={REC_ACCEL})")
+            rec_stage = "recording"
+        except Exception as e:
+            print(f"REC: movie start failed: {e}")
+
+    # Telemetry for the synced web dashboard: sample once per sim-second while
+    # recording so the charts can animate in lockstep with the movie.  The movie
+    # maps linearly (sim_t = sim_start + video_t * acceleration), so the web side
+    # just needs these samples plus the acceleration and the sim span.
+    telemetry = []
+    tele_last = -999.0
+    rec_sim_start = None
+    tele_path = os.path.join(rec_dir, "telemetry.json")
+    _gv_prev = _ho_prev = _wf_prev = False
+    gv_count = ho_count = wf_count = 0
+
     # Label IDs — keep stable so we overwrite rather than create new
     label_id = 0
 
@@ -132,25 +234,102 @@ def main():
         draw_label("CAM: OVERVIEW", 0.78, 0.02, size=0.04,
                    color="0xf1c40f", bold=True)
 
-        # --- Infer demo phase from Learner state ---
+        # --- Two-phase banner, inferred from the learner ---
         learner_state = states.get("Learner_L", {})
-        phase = "PHASE 1: OBSERVATION"
-        phase_color = "0xf1c40f"
+        worker_state = states.get("Worker_T", {})
+        cust_state = states.get("Customer_1", {})
         prec = learner_state.get("precision", 0.0)
         is_strong = learner_state.get("is_strong", False)
-        patterns = learner_state.get("patterns", 0)
 
-        if patterns == 0:
-            phase = "PHASE 1: OBSERVATION"
-            phase_color = "0xf1c40f"  # yellow
-        elif not is_strong:
-            phase = f"PHASE 2: LEARNING  (precision={prec:.2f})"
-            phase_color = "0xe67e22"  # orange
-        else:
-            phase = "PHASE 3: EXECUTING LEARNED SCRIPT"
+        if is_strong:
+            phase = "PHASE 2:  LEARNER NOW PERFORMING THE ROUTINE IT LEARNED"
             phase_color = "0x2ecc71"  # green
-
+        else:
+            phase = f"PHASE 1:  LEARNER WATCHING  —  learned {int(prec * 100)}%"
+            phase_color = "0xf1c40f"  # yellow
         draw_label(phase, 0.02, 0.09, size=0.05, color=phase_color, bold=True)
+
+        # --- Telemetry sampling for the synced dashboard ---
+        if recording and rec_stage == "recording":
+            now_t = robot.getTime()
+            if rec_sim_start is None:
+                rec_sim_start = now_t
+            # Rising-edge counters for the social-act tallies.
+            w_state = str(worker_state.get("state", ""))
+            gv = w_state.startswith("SOCIAL")
+            if gv and not _gv_prev:
+                gv_count += 1
+            _gv_prev = gv
+            ho = worker_state.get("action", "") == "handover"
+            if ho and not _ho_prev:
+                ho_count += 1
+            _ho_prev = ho
+            wf = bool(worker_state.get("escorting"))
+            if wf and not _wf_prev:
+                wf_count += 1
+            _wf_prev = wf
+            if now_t - tele_last >= 1.0:
+                tele_last = now_t
+                performing = (is_strong
+                              and learner_state.get("intent", "OBSERVE") != "OBSERVE")
+                telemetry.append({
+                    "t": round(now_t, 2),
+                    "precision": round(float(prec or 0.0), 3),
+                    "strong": bool(is_strong),
+                    "phase": "perform" if performing else "watch",
+                    "intent": learner_state.get("intent", "OBSERVE"),
+                    "restocked": int(worker_state.get("restocked", 0) or 0),
+                    "loops": int(worker_state.get("loop", 0) or 0),
+                    "collected": int(cust_state.get("collected", 0) or 0),
+                    "basket": int(cust_state.get("basket_count", 0) or 0),
+                    "giveway": gv_count,
+                    "handover": ho_count,
+                    "wayfinding": wf_count,
+                })
+
+        # --- Plain-language narration of the current beat ---
+        w_act = worker_state.get("action", "")
+        c_act = cust_state.get("action", "")
+        c_state = cust_state.get("state", "")
+        asking = cust_state.get("asking", "") or worker_state.get("escort_product", "")
+        narration, ncol = "", "0xffffff"
+        if w_act == "escorting":
+            narration = f"WORKER: \"Follow me!\"  leading the shopper to the {asking or 'shelf'}"
+            ncol = "0x9b59b6"
+        elif w_act == "handover":
+            narration = "WORKER hands the item to the shopper at the counter"
+            ncol = "0xe74c3c"
+        elif c_state.startswith("FOLLOW"):
+            narration = "CUSTOMER follows the worker to the shelf"
+            ncol = "0x9b59b6"
+        elif c_state.startswith("ASK"):
+            narration = f"CUSTOMER: \"Excuse me, where is the {asking or 'item'}?\""
+            ncol = "0x2ecc71"
+        elif str(worker_state.get("state", "")).startswith("SOCIAL:yield"):
+            narration = "WORKER steps aside to let the shopper pass"
+            ncol = "0x3498db"
+        elif w_act in ("pick", "place", "transit"):
+            narration = f"WORKER restocking  ({worker_state.get('destination', '')})"
+            ncol = "0x3498db"
+        if narration:
+            draw_label(narration, 0.02, 0.15, size=0.045, color=ncol, bold=True)
+
+        # --- Floating speech bubbles over actors' heads (Sims-style) ---
+        def bubble(name, text, color):
+            scr = head_screen(name)
+            if scr is None:
+                return
+            bx = min(0.80, max(0.01, scr[0] - 0.05))
+            by = min(0.90, max(0.03, scr[1] - 0.05))
+            draw_label(text, bx, by, size=0.05, color=color, bold=True)
+
+        asking = cust_state.get("asking", "")
+        if asking:
+            bubble("Customer_1", '"Where\'s the %s?"' % asking, "0x2ecc71")
+        elif worker_state.get("escorting"):
+            bubble("Worker_T", '"Follow me!"', "0x9b59b6")
+        if worker_state.get("action") == "handover":
+            bubble("Worker_T", '"Here you go!"', "0xe74c3c")
 
         # --- Bottom robot cards ---
         card_y = 0.84
@@ -201,6 +380,56 @@ def main():
 
             for j, line in enumerate(lines):
                 draw_label(line, x, card_y + 0.055 + j * 0.04, size=0.035, color="0xeeeeee")
+
+        # --- Recording lifecycle: film through the learn->perform arc ---
+        if rec_stage == "recording":
+            now = robot.getTime()
+            # "Performing" = crystallized AND actually executing the learned
+            # script (intent leaves OBSERVE once the learner switches phases).
+            performing = is_strong and learner_state.get("intent", "OBSERVE") != "OBSERVE"
+            if performing:
+                perform_s += timestep / 1000.0
+            done = perform_s >= REC_PERFORM_S or now >= REC_MAX_S
+            if int(now) % 30 == 0:
+                print(f"REC: t={now:.0f}s strong={is_strong} "
+                      f"performing={performing} "
+                      f"performed={perform_s:.0f}/{REC_PERFORM_S:.0f}s")
+            if done:
+                print(f"REC: stopping at t={now:.0f}s (performed {perform_s:.0f}s)")
+                try:
+                    robot.movieStopRecording()
+                except Exception as e:
+                    print(f"REC: movie stop error: {e}")
+                try:
+                    robot.animationStopRecording()
+                    print("REC: animation saved")
+                except Exception as e:
+                    print(f"REC: animation stop error: {e}")
+                try:
+                    with open(tele_path, "w") as tf:
+                        json.dump({
+                            "accel": REC_ACCEL,
+                            "sim_start": rec_sim_start or 0.0,
+                            "sim_end": now,
+                            "samples": telemetry,
+                        }, tf)
+                    print(f"REC: telemetry saved ({len(telemetry)} samples) "
+                          f"-> {tele_path}")
+                except Exception as e:
+                    print(f"REC: telemetry write failed: {e}")
+                rec_stage = "finishing"
+        elif rec_stage == "finishing":
+            # Let Webots flush/encode the movie before quitting.
+            try:
+                if robot.movieIsReady():
+                    if robot.movieFailed():
+                        print("REC: movie FAILED to encode")
+                    else:
+                        print("REC: movie encoded OK")
+                    robot.simulationQuit(0)
+            except Exception as e:
+                print(f"REC: finishing error: {e}")
+                robot.simulationQuit(0)
 
         tick += 1
 

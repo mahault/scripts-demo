@@ -16,10 +16,16 @@ from architecture_core.perception.sensors.base_sensors import SensorInterface
 class TiagoWebotsSensors(SensorInterface):
     """Reads world state via the Webots Supervisor API."""
 
-    def __init__(self, robot, self_node, name: str) -> None:
+    def __init__(self, robot, self_node, name: str,
+                 observe_agent_internals: bool = True) -> None:
         self.robot = robot
         self.self_node = self_node
         self.name = name
+        # When False, this agent may read only the *observable* state of other
+        # agents — their position — never their customData (intended goal, role
+        # priority, published state).  The learner sets this False so it cannot
+        # access any internal process of the humans it watches.
+        self.observe_agent_internals = observe_agent_internals
 
         # Discover other robots and world geometry once at startup
         self._other_robots: List[Dict[str, Any]] = []
@@ -48,15 +54,19 @@ class TiagoWebotsSensors(SensorInterface):
                 ox, oy = pos[0], pos[1]
             except Exception:
                 continue
-            ogx, ogy = 0.0, 0.0
-            try:
-                cd = node.getField("customData")
-                if cd:
-                    parts = cd.getSFString().strip().split(",")
-                    if len(parts) >= 2:
-                        ogx, ogy = float(parts[0]), float(parts[1])
-            except Exception:
-                pass
+            # Only the agent's position is observable.  Reading its intended goal
+            # from customData would be accessing an internal process — forbidden
+            # unless this agent is allowed to (e.g. the scripted worker/shopper).
+            ogx, ogy = ox, oy
+            if self.observe_agent_internals:
+                try:
+                    cd = node.getField("customData")
+                    if cd:
+                        parts = cd.getSFString().strip().split(",")
+                        if len(parts) >= 2:
+                            ogx, ogy = float(parts[0]), float(parts[1])
+                except Exception:
+                    pass
             agents.append({
                 "id": other["name"],
                 "pose": (ox, oy),
@@ -77,22 +87,29 @@ class TiagoWebotsSensors(SensorInterface):
     # Discovery helpers (run once)
     # ------------------------------------------------------------------
     def _find_all_robots(self) -> None:
-        """Discover ALL other TIAGo robots in the scene."""
+        """Discover ALL other actors in the scene.
+
+        Actors are either wheeled robots (``Tiago``) or walking humans
+        (``PedestrianAgent``) — both carry a ``name`` and a ``customData``
+        string, so the rest of the pipeline treats them identically.
+        """
         root = self.robot.getRoot()
         children = root.getField("children")
         for i in range(children.getCount()):
             node = children.getMFNode(i)
-            if node.getTypeName() == "Tiago":
+            type_name = node.getTypeName()
+            if type_name == "Tiago" or "Pedestrian" in type_name:
                 name_field = node.getField("name")
                 if name_field:
                     rname = name_field.getSFString()
                     if rname != self.name:
                         alpha = 0.5
-                        cd = node.getField("customData")
-                        if cd:
-                            parts = cd.getSFString().strip().split(",")
-                            if len(parts) >= 3:
-                                alpha = float(parts[2])
+                        if self.observe_agent_internals:
+                            cd = node.getField("customData")
+                            if cd:
+                                parts = cd.getSFString().strip().split(",")
+                                if len(parts) >= 3:
+                                    alpha = float(parts[2])
                         self._other_robots.append({
                             "node": node,
                             "name": rname,
@@ -213,7 +230,7 @@ class TiagoWebotsSensors(SensorInterface):
         return None, None
 
     def _get_other_goal(self) -> Tuple[float, float]:
-        if self.other_node:
+        if self.other_node and self.observe_agent_internals:
             cd = self.other_node.getField("customData")
             if cd:
                 parts = cd.getSFString().strip().split(",")

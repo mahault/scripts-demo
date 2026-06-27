@@ -15,6 +15,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/fruits/protos/Orange.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/fruits/protos/Apple.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/pal_robotics/tiago/protos/Tiago.proto"
+EXTERNPROTO "../protos/PedestrianAgent.proto"
 
 WorldInfo {
   title "Social Layer — Retail Script Learning Demo"
@@ -517,12 +518,14 @@ CeilingLight {
 # customData: goal_x,goal_y,alpha,agent_id
 # DEF is required so the learner's observer can resolve it via getFromDef.
 # =============================================
-DEF Worker_T Tiago {
-  translation -5.5 -1.0 0.095
+DEF Worker_T PedestrianAgent {
+  translation -5.5 -1.0 1.27
   rotation 0 0 1 0.0
   name "Worker_T"
   controller "tiago_retail_demo"
-  supervisor TRUE
+  controllerArgs ["worker"]
+  shirtColor 0.15 0.35 0.75
+  pantsColor 0.15 0.15 0.2
   customData "-5.5,-1.0,0.0,0"
 }
 
@@ -543,12 +546,14 @@ Tiago {
 # Customer 1 — simple scripted agent
 # Uses tiago_social_layer with a simple patrol script
 # =============================================
-DEF Customer_1 Tiago {
-  translation 0.0 -8.5 0.095
+DEF Customer_1 PedestrianAgent {
+  translation 0.0 -8.5 1.27
   rotation 0 0 1 1.57
   name "Customer_1"
   controller "tiago_retail_demo"
-  supervisor TRUE
+  controllerArgs ["customer"]
+  shirtColor 0.8 0.3 0.2
+  pantsColor 0.2 0.2 0.25
   customData "4.5,-6.0,0.0,2"
 }
 

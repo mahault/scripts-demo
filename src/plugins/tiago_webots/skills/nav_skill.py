@@ -22,8 +22,10 @@ class TiagoNavSkill(Skill):
     # Body + arm clearance used for path planning and reactive avoidance.
     ROBOT_RADIUS = 0.27
     FURNITURE_CLEARANCE = 0.25
-    # Per-step time budget before the learner snaps to its goal (ticks).
-    MAX_NAV_TICKS = 700
+    # Per-step time budget before the learner snaps to its goal (ticks).  Kept
+    # generous so the teleport backstop is a true last resort — most of the time
+    # the robot reaches its goal by driving, with no visible jump.
+    MAX_NAV_TICKS = 1600
 
     def __init__(self, driver: TiagoDriver, allow_giveup: bool = False) -> None:
         self.driver = driver
@@ -66,6 +68,15 @@ class TiagoNavSkill(Skill):
             self.driver.stop()
             return "RUNNING"
 
+        # Degenerate goal guard: a goal-less navigate primitive (one whose
+        # learned target was lost) collapses to the world origin (0,0), which is
+        # mid-store behind the divider — unreachable, so the base wedges there
+        # for the whole nav budget.  No real fixture sits at the origin, so treat
+        # it as an immediate no-op instead of driving into a wall.
+        if abs(self.goal_x) < 1e-6 and abs(self.goal_y) < 1e-6:
+            self.driver.stop()
+            return "SUCCESS"
+
         # Respect stop_distance: hold position if an agent is within range
         stop_dist = update.params.get("stop_distance", 0.0)
         if stop_dist > 0:
@@ -85,6 +96,31 @@ class TiagoNavSkill(Skill):
         pose = pb.world.get("robot_pose", (0, 0, 0, 0))
         cx, cy = pose[0], pose[1]
         heading = pose[3] if len(pose) > 3 else 0.0
+
+        # Position-controlled humans never wedge and have no base to scrape the
+        # shelves, so they skip the furniture keep-out/detour entirely and walk
+        # straight to the goal (right up to a fixture), avoiding only other
+        # agents reactively.  This removes the aisle-keepout jitter the wheeled
+        # base needs and lets the worker/shopper actually reach the shelf.
+        if getattr(self.driver, "is_human", False):
+            agent_obstacles = [(ap[0], ap[1], 0.4)
+                               for agent in pb.world.get("agents", [])
+                               for ap in [agent.get("pose", (0, 0))]]
+            self.driver.navigate_to_target(
+                cx, cy, heading, self.goal_x, self.goal_y, speed_scale,
+                obstacles=agent_obstacles,
+            )
+            dist_to_goal = math.hypot(self.goal_x - cx, self.goal_y - cy)
+            self._tick_count += 1
+            if self._tick_count % 60 == 0:
+                print(f"  [NAV] pos=({cx:.2f},{cy:.2f}) h={heading:.2f}"
+                      f" goal=({self.goal_x:.2f},{self.goal_y:.2f})"
+                      f" d={dist_to_goal:.2f} (human)")
+            if dist_to_goal < self.goal_tolerance:
+                self.driver.stop()
+                print(f"  [NAV] SUCCESS dist={dist_to_goal:.2f}")
+                return "SUCCESS"
+            return "RUNNING"
 
         # If we are mid-recovery from a wedge, keep reversing + turning until
         # the maneuver finishes; the navigator resumes next tick.

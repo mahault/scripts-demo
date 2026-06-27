@@ -1,41 +1,212 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Retail Social-Layer Demo Dashboard</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retail Social-Layer Demo — Live Run Dashboard</title>
 <style>
+ :root { --watch:#f1c40f; --perform:#2ecc71; --ink:#1a1a1a; --muted:#6b7280;
+         --blue:#3498db; --green:#2ecc71; --purple:#9b59b6; --red:#e74c3c; }
+ * { box-sizing: border-box; }
  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0 auto;
-        max-width: 1180px; padding: 24px; color: #1a1a1a; }
- h1 { font-size: 26px; margin-bottom: 4px; }
- .sub { color: #666; margin-bottom: 20px; }
- img { width: 100%; border: 1px solid #ddd; border-radius: 8px; }
- .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
- .card { border: 1px solid #e3e3e3; border-radius: 8px; padding: 14px; }
- .card .n { font-size: 30px; font-weight: 700; }
- .card .l { color: #666; font-size: 13px; }
- ol { line-height: 1.7; } code { background:#f3f3f3; padding:1px 5px; border-radius:4px; }
-</style></head><body>
-<h1>Retail Social-Layer Demo — Run Dashboard</h1>
-<div class="sub">A TIAGo worker restocks a store while socially interacting with a
-shopper; a second TIAGo learns the worker's routine purely by watching, then replays it.</div>
-<div class="grid">
- <div class="card"><div class="n">14</div><div class="l">worker restock loops</div></div>
- <div class="card"><div class="n">5</div><div class="l">hand-overs at counter</div></div>
- <div class="card"><div class="n">2</div><div class="l">wayfinding answers</div></div>
- <div class="card"><div class="n">45</div><div class="l">give-ways to shoppers</div></div>
- <div class="card"><div class="n">2</div><div class="l">loops the learner observed</div></div>
- <div class="card"><div class="n">yes</div><div class="l">script crystallised</div></div>
- <div class="card"><div class="n">16</div><div class="l">learned script steps</div></div>
- <div class="card"><div class="n">3</div><div class="l">customer items collected</div></div>
+        max-width: 1180px; padding: 24px; color: var(--ink); }
+ h1 { font-size: 26px; margin: 0 0 4px; }
+ .sub { color: var(--muted); margin-bottom: 18px; }
+ video { width: 100%; border: 1px solid #ddd; border-radius: 10px; background:#000; display:block; }
+ .stage { display:flex; align-items:center; gap:12px; margin:14px 0 6px; }
+ .chip { font-weight:800; letter-spacing:.3px; padding:8px 14px; border-radius:999px;
+         color:#111; font-size:15px; transition: background .3s, color .3s; }
+ .chip.watch { background: var(--watch); }
+ .chip.perform { background: var(--perform); color:#06340f; }
+ .narr { color:#374151; font-size:15px; }
+ .grid { display:grid; grid-template-columns: 1.35fr 1fr; gap:18px; margin-top:10px; }
+ .card { border:1px solid #e5e7eb; border-radius:10px; padding:14px 16px; }
+ .card h3 { margin:0 0 10px; font-size:14px; color:var(--muted); font-weight:700;
+            text-transform:uppercase; letter-spacing:.4px; }
+ canvas { width:100%; height:auto; display:block; }
+ .stat { margin:12px 0; }
+ .stat .row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+ .stat .lab { font-size:14px; color:#374151; }
+ .stat .val { font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; }
+ .bar { height:10px; background:#eef0f3; border-radius:6px; overflow:hidden; }
+ .bar > i { display:block; height:100%; width:0; border-radius:6px; transition: width .2s linear; }
+ .explain { margin-top:22px; line-height:1.7; }
+ .explain li { margin-bottom:6px; }
+ code { background:#f3f3f3; padding:1px 5px; border-radius:4px; }
+ .note { color:#b45309; background:#fffbeb; border:1px solid #fde68a; padding:10px 12px;
+         border-radius:8px; margin:10px 0; font-size:14px; display:none; }
+</style>
+</head>
+<body>
+<h1>Retail Social-Layer Demo — Live Run Dashboard</h1>
+<div class="sub">A human worker restocks a store and helps a shopper. A TIAGo robot
+ <b>watches the worker</b>, infers the restocking routine, and then
+ <b>performs it itself</b> — the charts below move in lockstep with the video.</div>
+
+<video id="vid" controls autoplay muted loop playsinline src="recorded_run/demo.mp4"></video>
+
+<div class="stage">
+  <span id="chip" class="chip watch">PHASE 1 · WATCHING</span>
+  <span id="narr" class="narr">The learner is observing the worker's routine…</span>
 </div>
-<img src="dashboard.png" alt="dashboard">
-<h2>What you are looking at</h2>
-<ol>
- <li><b>Store map</b> — routes of the worker (blue), the learner replaying the
-     learned route (green) and the customer (orange). Stars mark where the
-     hand-over (counter) and wayfinding ("where's the milk?") happen.</li>
- <li><b>Crystallisation curve</b> — the learner's best pattern precision climbs
-     with each observed restock loop; once it passes the strong threshold the
-     routine <i>crystallises</i> into a script the learner then executes.</li>
- <li><b>Interaction tally</b> — the four social acts the worker performs:
-     give-way, greet, hand-over, and wayfinding.</li>
- <li><b>Loops over time</b> — the worker keeps restocking steadily.</li>
+
+<div id="note" class="note"></div>
+
+<div class="grid">
+  <div class="card">
+    <h3>Crystallisation — pattern precision over time</h3>
+    <canvas id="prec" width="640" height="300"></canvas>
+  </div>
+  <div class="card">
+    <h3>Live tallies</h3>
+    <div class="stat" data-k="precision">
+      <div class="row"><span class="lab">Best pattern precision</span><span class="val" id="v_precision">0.00</span></div>
+      <div class="bar"><i id="b_precision" style="background:var(--purple)"></i></div>
+    </div>
+    <div class="stat" data-k="restocked">
+      <div class="row"><span class="lab">Worker restocks</span><span class="val" id="v_restocked">0</span></div>
+      <div class="bar"><i id="b_restocked" style="background:var(--blue)"></i></div>
+    </div>
+    <div class="stat" data-k="collected">
+      <div class="row"><span class="lab">Shopper items collected</span><span class="val" id="v_collected">0</span></div>
+      <div class="bar"><i id="b_collected" style="background:var(--green)"></i></div>
+    </div>
+    <div class="stat" data-k="giveway">
+      <div class="row"><span class="lab">Give-ways to the shopper</span><span class="val" id="v_giveway">0</span></div>
+      <div class="bar"><i id="b_giveway" style="background:var(--red)"></i></div>
+    </div>
+    <div class="stat" data-k="loops">
+      <div class="row"><span class="lab">Restock loops observed</span><span class="val" id="v_loops">0</span></div>
+      <div class="bar"><i id="b_loops" style="background:#f59e0b"></i></div>
+    </div>
+  </div>
+</div>
+
+<h2 class="explain" style="margin-bottom:0">What you are looking at</h2>
+<ol class="explain">
+ <li><b>The video</b> is the actual 3D run, sped up. The human worker (blue shirt)
+     restocks shelves and helps the orange-shirt shopper; the red TIAGo is the learner.</li>
+ <li><b>Crystallisation curve</b> — the learner's best-pattern precision climbs as it
+     watches restock loops. When it crosses the strong threshold the routine
+     <i>crystallises</i> into a script and the learner switches to performing it.</li>
+ <li><b>Generalisation</b> — the worker restocks <i>different</i> shelves; the learner
+     abstracts "go to a shelf and stock it" rather than memorising one shelf.</li>
+ <li><b>Live tallies</b> advance with the playhead so the numbers always match the frame.</li>
 </ol>
-</body></html>
+
+<script>
+const STRONG = 0.8;                 // strong-precision threshold (retail config)
+const els = {
+  vid: document.getElementById('vid'),
+  chip: document.getElementById('chip'),
+  narr: document.getElementById('narr'),
+  note: document.getElementById('note'),
+  cv: document.getElementById('prec'),
+};
+const ctx = els.cv.getContext('2d');
+let T = null;                       // telemetry {accel, sim_start, sim_end, samples}
+
+function showNote(msg){ els.note.textContent = msg; els.note.style.display = 'block'; }
+
+function simTime(){
+  if (!T) return 0;
+  return T.sim_start + (els.vid.currentTime || 0) * T.accel;
+}
+
+// Nearest sample index for a sim time (samples sorted by t).
+function sampleAt(st){
+  const s = T.samples;
+  if (!s.length) return null;
+  let lo = 0, hi = s.length - 1;
+  if (st <= s[0].t) return s[0];
+  if (st >= s[hi].t) return s[hi];
+  while (lo < hi){ const m = (lo+hi)>>1; if (s[m].t < st) lo = m+1; else hi = m; }
+  // pick the closer of lo-1, lo
+  const a = s[Math.max(0,lo-1)], b = s[lo];
+  return (Math.abs(a.t-st) <= Math.abs(b.t-st)) ? a : b;
+}
+
+function setBar(key, frac, val){
+  document.getElementById('v_'+key).textContent = val;
+  document.getElementById('b_'+key).style.width = Math.max(0, Math.min(1, frac))*100 + '%';
+}
+
+// ---- precision curve (static full history + moving playhead) ----
+let maxPrec = 1.6, maxT = 1;
+function drawCurve(st, cur){
+  const w = els.cv.width, h = els.cv.height, padL = 38, padB = 26, padT = 10, padR = 10;
+  const X = t => padL + (t / maxT) * (w - padL - padR);
+  const Y = p => h - padB - (p / maxPrec) * (h - padB - padT);
+  ctx.clearRect(0,0,w,h);
+  // axes
+  ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1; ctx.fillStyle = '#9ca3af';
+  ctx.font = '11px Segoe UI';
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,h-padB); ctx.lineTo(w-padR,h-padB); ctx.stroke();
+  // strong threshold
+  ctx.strokeStyle = '#d1d5db'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(padL,Y(STRONG)); ctx.lineTo(w-padR,Y(STRONG)); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillText('strong', w-padR-42, Y(STRONG)-4);
+  ctx.fillText('precision', 2, padT+8);
+  // curve up to playhead in solid, ahead faint
+  const s = T.samples;
+  function poly(from,to,style,wid){ ctx.strokeStyle=style; ctx.lineWidth=wid; ctx.beginPath();
+    for(let i=from;i<=to;i++){ const p=s[i]; const x=X(p.t), y=Y(p.precision);
+      i===from?ctx.moveTo(x,y):ctx.lineTo(x,y);} ctx.stroke(); }
+  // find index at st
+  let idx = 0; while (idx < s.length-1 && s[idx+1].t <= st) idx++;
+  poly(0, s.length-1, '#e9d5ff', 2);          // full faint
+  poly(0, idx, '#7c3aed', 2.5);               // traversed bold
+  // playhead
+  const px = X(Math.min(st,maxT)), py = Y(cur);
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(px,padT); ctx.lineTo(px,h-padB); ctx.stroke();
+  ctx.fillStyle = '#7c3aed'; ctx.beginPath(); ctx.arc(px,py,4.5,0,7); ctx.fill();
+}
+
+let last = null;
+function frame(){
+  if (T){
+    const st = simTime();
+    const s = sampleAt(st);
+    if (s){
+      const performing = s.phase === 'perform';
+      els.chip.textContent = performing ? 'PHASE 2 · PERFORMING' : 'PHASE 1 · WATCHING';
+      els.chip.className = 'chip ' + (performing ? 'perform' : 'watch');
+      els.narr.textContent = performing
+        ? 'The learner is performing the routine it learned by watching.'
+        : `The learner is observing… precision ${s.precision.toFixed(2)} of ${STRONG.toFixed(2)} needed.`;
+      setBar('precision', s.precision/maxPrec, s.precision.toFixed(2));
+      setBar('restocked', s.restocked/Math.max(1,maxV.restocked), s.restocked);
+      setBar('collected', s.collected/Math.max(1,maxV.collected), s.collected);
+      setBar('giveway',  s.giveway/Math.max(1,maxV.giveway),   s.giveway);
+      setBar('loops',    s.loops/Math.max(1,maxV.loops),       s.loops);
+      drawCurve(st, s.precision);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+let maxV = {restocked:1, collected:1, giveway:1, loops:1};
+fetch('recorded_run/telemetry.json')
+  .then(r => { if(!r.ok) throw new Error('no telemetry'); return r.json(); })
+  .then(j => {
+    T = j;
+    if (!T.samples || !T.samples.length) throw new Error('empty telemetry');
+    maxT = Math.max(1, T.samples[T.samples.length-1].t);
+    maxPrec = Math.max(1.6, ...T.samples.map(s=>s.precision)) * 1.05;
+    const lastS = T.samples[T.samples.length-1];
+    maxV = {
+      restocked: Math.max(1, ...T.samples.map(s=>s.restocked)),
+      collected: Math.max(1, ...T.samples.map(s=>s.collected)),
+      giveway:   Math.max(1, ...T.samples.map(s=>s.giveway)),
+      loops:     Math.max(1, ...T.samples.map(s=>s.loops)),
+    };
+  })
+  .catch(e => showNote('Telemetry not loaded ('+e.message+') — charts will animate once '
+    + 'recorded_run/telemetry.json is present. Tip: open this page via a local server '
+    + '(e.g. `python -m http.server`) so the browser can fetch it.'));
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

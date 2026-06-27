@@ -71,6 +71,28 @@ class TiagoDriver:
         self.left_motor.setVelocity(0.0)
         self.right_motor.setVelocity(0.0)
 
+    def face(self, target_x: float, target_y: float) -> None:
+        """No-op for the wheeled base.
+
+        Humans turn to face a fixture before reaching; the robot's pick/place
+        is an abstract Supervisor teleport, so it does not need to reorient.
+        Kept so the controllers can call ``driver.face(...)`` uniformly.
+        """
+        return
+
+    def yield_aside(self, other_x: float, other_y: float,
+                    speed: float = 0.3) -> None:
+        """Wheeled give-way: reverse a little (the base cannot strafe).
+
+        Humans override this to step sideways; the robot keeps the reverse
+        behaviour so the encounter manager works for both.
+        """
+        self.creep(-abs(speed))
+
+    def apply_separation(self, others) -> None:
+        """No-op: the wheeled base keeps clearance via physics + nav avoidance."""
+        return
+
     def creep(self, linear: float, angular: float = 0.0) -> None:
         """Open-loop differential drive, used for short social maneuvers.
 
@@ -143,6 +165,12 @@ class TiagoDriver:
     K_REP = 1.2               # repulsive force gain
     MAX_REP = 0.8             # max repulsive speed (m/s)
     K_ATT = 2.0               # attractive force gain (normalised)
+
+    # Personal space (proxemics): keep a comfortable gap from other agents.
+    # gap = centre-distance minus the agent's radius.  Below STOP we hold still
+    # to respect their space; between STOP and SLOW we ease off proportionally.
+    PERSONAL_STOP = 0.45      # hold position when an agent is this close ahead
+    PERSONAL_SLOW = 1.00      # start slowing for an agent within this gap
 
     def navigate_to_target(
         self,
@@ -230,7 +258,9 @@ class TiagoDriver:
             # Apply speed_scale from IntentPolicy / SafetyShield
             linear *= max(0.0, min(1.0, speed_scale))
 
-        # Extra caution: slow down when an obstacle is directly ahead
+        # Personal space (proxemics): ease off, then hold, as we approach
+        # another agent ahead — so robots keep a comfortable gap instead of
+        # driving into one another or standing on top of each other.
         if obstacles:
             cos_h = math.cos(current_heading)
             sin_h = math.sin(current_heading)
@@ -238,12 +268,16 @@ class TiagoDriver:
                 odx = ox - current_x
                 ody = oy - current_y
                 odist = math.sqrt(odx * odx + ody * ody)
-                # Projection of obstacle onto forward axis
                 forward_proj = odx * cos_h + ody * sin_h
                 lateral_proj = abs(-odx * sin_h + ody * cos_h)
-                clearance = odist - orad
-                if 0 < forward_proj < 0.8 and lateral_proj < 0.4 and clearance < 0.5:
-                    linear *= max(0.1, clearance / 0.5)
+                gap = odist - orad
+                if forward_proj > 0 and lateral_proj < 0.55:
+                    if gap < self.PERSONAL_STOP:
+                        linear = 0.0
+                    elif gap < self.PERSONAL_SLOW:
+                        scale = ((gap - self.PERSONAL_STOP)
+                                 / (self.PERSONAL_SLOW - self.PERSONAL_STOP))
+                        linear *= max(0.0, min(1.0, scale))
 
         # Differential-drive kinematics
         v_left = (linear - angular * self.WHEEL_BASE / 2.0) / self.WHEEL_RADIUS

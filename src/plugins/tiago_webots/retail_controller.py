@@ -57,6 +57,21 @@ from architecture_core.safety.velocity_predictor import VelocityPredictor
 from architecture_core.cognition.norms.predictive_collision import PredictiveCollisionRule
 
 from plugins.tiago_webots.robot.driver import TiagoDriver
+from plugins.tiago_webots.robot.human_driver import HumanDriver
+
+
+def _make_driver(robot):
+    """Return a HumanDriver for a Pedestrian node, else a TiagoDriver.
+
+    Lets the worker/customer be either walking humans or wheeled robots with no
+    change to the retail logic — both expose the same driver interface.
+    """
+    try:
+        if "Pedestrian" in robot.getSelf().getTypeName():
+            return HumanDriver(robot)
+    except Exception:
+        pass
+    return TiagoDriver(robot)
 from plugins.tiago_webots.perception.object_sensors import TiagoObjectSensors
 from plugins.tiago_webots import plugin as tiago_plugin
 from plugins.tiago_webots.skills.nav_skill import TiagoNavSkill
@@ -167,7 +182,7 @@ class RetailWaitRule(PersonalSpaceRule):
 # TEACHER MODE
 # ============================================================================
 def _run_teacher(robot, timestep, name, agent_id):
-    driver = TiagoDriver(robot)
+    driver = _make_driver(robot)      # walking human or wheeled robot
     self_node = robot.getSelf()
     sensors = TiagoObjectSensors(robot, self_node, name)
     nav = TiagoNavSkill(driver)
@@ -182,12 +197,11 @@ def _run_teacher(robot, timestep, name, agent_id):
         (-4.9, -1.5),   # 1 corridor entry, clear of stock_shelf & divider
         (-4.9, -5.0),   # 2 south of stock divider
         (-4.9, -7.0),   # 3 south aisle (clear of shelf A/B inflated keepout)
-        (-3.5, -7.0),   # 4 shelf A aisle
+        (-2.0, -6.25),  # 4 shelf A front — human walks right up to the shelf
         (-0.25, -7.0),  # 5 central aisle between shelf A and shelf B
         (2.0, -7.0),    # 6 approach counter from west
         (3.0, -7.0),    # 7 worker queue (south-west of service counter)
-        (1.5, -7.0),    # 8 shelf B restock point — aisle, south of shelf_B
-                        #   (teleport place; never enters the shelf keepout)
+        (1.5, -6.25),   # 8 shelf B front — human walks right up to the shelf
         (-1.0, -7.0),   # 9 continue west along south aisle
         (-4.9, -7.0),   # 10 west along south aisle
         (-4.9, -5.0),   # 11 north toward corridor
@@ -216,9 +230,16 @@ def _run_teacher(robot, timestep, name, agent_id):
     WP_NAMES = {
         0: "stock", 4: "shelf_a", 7: "counter", 8: "shelf_b",
     }
+    # Point each fixture so the actor turns to face it (and reaches toward it)
+    # while restocking, instead of gesturing along the aisle.
+    FACE_TARGET = {
+        4: (-2.0, -5.75),   # shelf_a centre
+        7: (4.5, -6.85),    # service counter
+        8: (1.5, -5.75),    # shelf_b centre
+    }
 
-    dwell_ticks = 80    # ~1.3s dwell at each waypoint
-    goal_tolerance = 0.6
+    dwell_ticks = 80    # ~1.3s dwell while restocking at a fixture
+    goal_tolerance = 0.35
 
     dummy_update = SkillUpdate(intent="approach", params={"speed_scale": 0.8})
 
@@ -241,17 +262,27 @@ def _run_teacher(robot, timestep, name, agent_id):
     at_stock = False
     at_dest = False
     waiting_for_customer = False
+    face_xy = None            # fixture the human turns to face while restocking
 
     # Give-way + greet manager: turns shopper encounters (anywhere on the
     # floor) into a structured social act instead of a collision.
     encounter = WorkerEncounterManager(name, customer_id="Customer_1")
 
-    # Wayfinding: read the shopper's "asking" product (published in its
-    # customData) and point to the right shelf.
+    # Wayfinding by escort: read the shopper's "asking" product (published in
+    # its customData) and walk them to the right shelf.
     customer_node = robot.getFromDef("Customer_1")
     wayfinding_count = 0
-    responded_to_ask = False
-    directing_ticks = 0
+    escorting = False
+    escort_target = None      # (x, y) shelf approach point the worker leads to
+    escort_product = ""
+    escort_arms_ticks = 0     # gesture-at-shelf dwell once we arrive
+    PRODUCT_APPROACH = {       # point right in front of each shelf to lead to
+        "shelf_A": (-2.0, -6.25),
+        "shelf_B": (1.5, -6.25),
+    }
+
+    def shelf_for(product):
+        return PRODUCT_SHELF.get(product, ("shelf_A", None))[0]
 
     def read_customer_asking():
         if customer_node is None:
@@ -350,50 +381,78 @@ def _run_teacher(robot, timestep, name, agent_id):
         pb = PerceptBundle(t=robot.getTime(), world=raw)
         pose = raw.get("robot_pose", (0, 0, 0, 0))
 
+        # Personal-space separation every tick (humans never overlap/push).
+        driver.apply_separation([a["pose"] for a in raw.get("agents", [])
+                                 if a.get("pose")])
+
         # Keep any held object attached to the gripper while moving, and keep
         # items dropped into trays visually locked to those trays.
         if holding:
             sensors.update_held_position()
         sensors.update_containers()
 
-        # Wayfinding: when the shopper is asking about a product and is nearby,
-        # briefly turn to them and point an arm toward the right shelf.
+        # Wayfinding by escort: when a shopper asks for a product nearby, the
+        # worker says "follow me" and walks them to the right shelf, then
+        # gestures at it.  This is the legible "helping by taking them there".
         asking = read_customer_asking()
         cust_xy = agent_pose(pb, "Customer_1")
         near_asker = (bool(asking) and cust_xy is not None
                       and math.hypot(cust_xy[0] - pose[0],
-                                     cust_xy[1] - pose[1]) < 2.2)
-        if near_asker and not responded_to_ask:
-            responded_to_ask = True
-            directing_ticks = 50
-            wayfinding_count += 1
-            shelf, _ = PRODUCT_SHELF.get(asking, ("shelf_A", None))
-            print(f"{name}: DIRECTING Customer_1 -> {shelf} for '{asking}'")
-        if not asking:
-            responded_to_ask = False
-        if directing_ticks > 0:
-            directing_ticks -= 1
-            driver.stop()
-            if cust_xy is not None:
-                driver.set_head_pan_tilt(
-                    max(-1.3, min(1.3, relative_bearing(pose, cust_xy))), 0.0)
-            driver.extend_arm()      # point toward the product's shelf
-            state = "SOCIAL:directing"
+                                     cust_xy[1] - pose[1]) < 2.5)
+        if near_asker and not escorting:
+            escorting = True
+            escort_product = asking
+            shelf = shelf_for(asking)
+            escort_target = PRODUCT_APPROACH.get(shelf, (-2.0, -6.6))
+            escort_arms_ticks = 0
+            nav.start(SkillRequest(skill="navigate",
+                                   goal={"x": escort_target[0], "y": escort_target[1]},
+                                   params={"goal_tolerance": 0.6}))
+            print(f"{name}: ESCORT 'follow me' -> leading Customer_1 to {shelf} "
+                  f"for '{asking}'")
+
+        if escorting:
+            ex, ey = escort_target
+            arrived = math.hypot(pose[0] - ex, pose[1] - ey) < 0.8
+            if not arrived and escort_arms_ticks == 0:
+                # Lead the way to the shelf at a calm pace so the shopper keeps up.
+                nav.tick(pb, SkillUpdate(intent="approach",
+                                         params={"speed_scale": 0.55}))
+                state = "SOCIAL:escorting"
+            else:
+                driver.stop()
+                driver.extend_arm()                 # "here it is"
+                if cust_xy is not None:
+                    driver.set_head_pan_tilt(
+                        max(-1.3, min(1.3, relative_bearing(pose, cust_xy))), 0.0)
+                escort_arms_ticks += 1
+                state = "SOCIAL:at_shelf"
+                if escort_arms_ticks == 1:
+                    wayfinding_count += 1
+                    print(f"{name}: ARRIVED 'here is the {escort_product}'")
+                if escort_arms_ticks > 140:
+                    driver.retract_arm()
+                    driver.set_head_pan_tilt(0.0, 0.0)
+                    escorting = False
+                    escort_arms_ticks = 0
+                    wx, wy = waypoints[wp_idx]
+                    nav.start(SkillRequest(skill="navigate",
+                                           goal={"x": wx, "y": wy},
+                                           params={"goal_tolerance": goal_tolerance}))
             if tick_count % 10 == 0:
                 try:
                     self_node.getField("customData").setSFString(json.dumps({
                         "waypoint": wp_idx, "loop": loop_count, "state": state,
-                        "action": "directing", "holding": holding,
+                        "action": "escorting", "holding": holding,
                         "held_id": held_id, "destination": destination,
                         "restocked": restocked_count, "handovers": handover_count,
                         "wayfinds": wayfinding_count,
+                        "escorting": True, "escort_product": escort_product,
+                        "ex": escort_target[0], "ey": escort_target[1],
                         "tx": waypoints[wp_idx][0], "ty": waypoints[wp_idx][1],
                     }))
                 except Exception:
                     pass
-            if directing_ticks == 0:
-                driver.retract_arm()
-                driver.set_head_pan_tilt(0.0, 0.0)
             tick_count += 1
             continue
 
@@ -440,7 +499,12 @@ def _run_teacher(robot, timestep, name, agent_id):
                                    params={"goal_tolerance": goal_tolerance}))
 
         if dwell_remaining > 0:
-            driver.stop()
+            # Turn to face the shelf/counter while restocking (humans); the
+            # wheeled robot's face() is a no-op.
+            if face_xy is not None:
+                driver.face(face_xy[0], face_xy[1])
+            else:
+                driver.stop()
 
             # At the counter with goods to hand over, wait (arm extended,
             # offering) for the shopper to arrive before completing the dwell,
@@ -489,6 +553,7 @@ def _run_teacher(robot, timestep, name, agent_id):
 
             if dwell_remaining == 0:
                 counter_wait = 0
+                face_xy = None
                 wp_idx = (wp_idx + 1) % len(waypoints)
                 wx, wy = waypoints[wp_idx]
                 nav.start(SkillRequest(skill="navigate",
@@ -505,10 +570,30 @@ def _run_teacher(robot, timestep, name, agent_id):
             status = nav.tick(pb, dummy_update)
             state = f"NAV({status})"
             if status == "SUCCESS":
-                dwell_remaining = dwell_ticks
-                wp_name = WP_NAMES.get(wp_idx, "transit")
-                print(f"{name}: arrived at wp={wp_idx} ({wp_name}) "
-                      f"pos=({pose[0]:.2f},{pose[1]:.2f}) holding={holding}")
+                # Only pause to restock where there is real work: picking at the
+                # stock room (wp 0) or placing/handing over at this loop's
+                # destination.  Every other waypoint is a transit point the
+                # human glides straight through — no more aisle gesturing.
+                manip_here = (wp_idx == 0
+                              or wp_idx == DESTINATION_WP.get(destination, -1))
+                if manip_here:
+                    dwell_remaining = dwell_ticks
+                    face_xy = FACE_TARGET.get(wp_idx)
+                    wp_name = WP_NAMES.get(wp_idx, "transit")
+                    print(f"{name}: arrived at wp={wp_idx} ({wp_name}) "
+                          f"pos=({pose[0]:.2f},{pose[1]:.2f}) holding={holding}")
+                else:
+                    face_xy = None
+                    wp_idx = (wp_idx + 1) % len(waypoints)
+                    wx, wy = waypoints[wp_idx]
+                    nav.start(SkillRequest(skill="navigate",
+                                           goal={"x": wx, "y": wy},
+                                           params={"goal_tolerance": goal_tolerance}))
+                    action_done = False
+                    did_handover = False
+                    if wp_idx == 0:
+                        loop_count += 1
+                        destination = ["shelf_a", "shelf_b", "counter"][loop_count % 3]
 
         # Publish HUD state
         if tick_count % 10 == 0:
@@ -545,12 +630,40 @@ def _run_teacher(robot, timestep, name, agent_id):
 # CUSTOMER MODE
 # ============================================================================
 def _run_customer(robot, timestep, name, agent_id):
-    driver = TiagoDriver(robot)
+    driver = _make_driver(robot)      # walking human or wheeled robot
     self_node = robot.getSelf()
     sensors = TiagoObjectSensors(robot, self_node, name)
     # allow_giveup: the shopper teleport-completes a goal it cannot reach in a
     # tight aisle, so it never wedges and block the worker's route indefinitely.
     nav = TiagoNavSkill(driver, allow_giveup=True)
+
+    # Read the worker's escort state so the shopper can follow it to the shelf.
+    worker_node = robot.getFromDef("Worker_T")
+    PRODUCT_CONTAINER = {
+        "milk": "CONTAINER_shelf_a",
+        "orange": "CONTAINER_shelf_b",
+        "can": "CONTAINER_shelf_b",
+    }
+    # Fixture centres the shopper turns to face while reaching for an item.
+    CONTAINER_CENTER = {
+        "CONTAINER_shelf_a": (-2.0, -5.75),
+        "CONTAINER_shelf_b": (1.5, -5.75),
+        "CONTAINER_counter": (4.5, -6.85),
+    }
+
+    def read_worker_escort():
+        if worker_node is None:
+            return (False, None, "")
+        try:
+            d = json.loads(worker_node.getField("customData").getSFString())
+            if d.get("escorting") and d.get("ex") is not None:
+                return (True, (float(d["ex"]), float(d["ey"])),
+                        d.get("escort_product", ""))
+        except Exception:
+            pass
+        return (False, None, "")
+
+    follow_product = ""
 
     # Shopping sources: where the customer stands to pick items, and the
     # container id of the tray to pick from.
@@ -629,6 +742,24 @@ def _run_customer(robot, timestep, name, agent_id):
         nonlocal state, source_index, holding_item, held_item_id, holding_basket, collected
         if state == "ASK_WORKER":
             return  # just waiting near the worker to be given directions
+        if state == "FOLLOW_WORKER":
+            # Collect the product the worker just walked us to.  Always reach
+            # for the shelf (legible "picking it up"); grab a real item if the
+            # shelf has one, and count the visit as a successful find either way.
+            cid = PRODUCT_CONTAINER.get(follow_product, "CONTAINER_shelf_a")
+            driver.open_gripper()
+            driver.extend_arm()
+            item_id = sensors.find_object_in_container(cid)
+            if item_id is not None and not holding_item:
+                sensors.set_manipulation_target(item_id)
+                if sensors.supervisor_grasp(item_id):
+                    holding_item = True
+                    held_item_id = item_id
+                    driver.close_gripper()
+            collected += 1
+            print(f"{name}: found the {follow_product} the worker showed me "
+                  f"(got {collected})")
+            return
         if state == "DROP_BASKET":
             if holding_item and basket_container_id:
                 driver.open_gripper()
@@ -692,30 +823,19 @@ def _run_customer(robot, timestep, name, agent_id):
         """Decide where to go after the current dwell finishes."""
         nonlocal state, source_index, wanted_idx
         if state == "ASK_WORKER":
-            # Done asking — start the shopping trip.
-            state = SOURCES[0]["state"]
-            source_index = 0
-            start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
+            # Still waiting (the worker hasn't started escorting yet) — keep
+            # asking rather than wandering off.
+            start_nav(ASK_POINT[0], ASK_POINT[1])
             return
-        if state == "DROP_BASKET":
-            source_index += 1
-            if source_index < len(SOURCES):
-                state = SOURCES[source_index]["state"]
-                start_nav(SOURCES[source_index]["goal"][0],
-                          SOURCES[source_index]["goal"][1])
-            elif collected >= TARGET_COUNT:
-                state = "PICKUP_BASKET"
-                start_nav(BASKET_PICK_GOAL[0], BASKET_PICK_GOAL[1])
-            else:
-                # Loop sources again until the basket has enough items
-                source_index = 0
-                state = SOURCES[0]["state"]
-                start_nav(SOURCES[0]["goal"][0], SOURCES[0]["goal"][1])
-            return
-
-        if state.startswith("COLLECT_"):
+        if state == "FOLLOW_WORKER":
+            # Got the escorted item — go drop it in the basket and check out.
             state = "DROP_BASKET"
             start_nav(BASKET_DROP_GOAL[0], BASKET_DROP_GOAL[1])
+            return
+        if state == "DROP_BASKET":
+            # One escorted item per trip — drop it in the basket and check out.
+            state = "PICKUP_BASKET"
+            start_nav(BASKET_PICK_GOAL[0], BASKET_PICK_GOAL[1])
             return
 
         if state == "PICKUP_BASKET":
@@ -748,14 +868,41 @@ def _run_customer(robot, timestep, name, agent_id):
         pb = PerceptBundle(t=robot.getTime(), world=raw)
         pose = raw.get("robot_pose", (0, 0, 0, 0))
 
+        # Personal-space separation every tick (humans never overlap/push).
+        driver.apply_separation([a["pose"] for a in raw.get("agents", [])
+                                 if a.get("pose")])
+
         # Keep the held object (item or basket) attached to the gripper, then
         # update any contained items so they follow the basket.
         if sensors.held_object_id:
             sensors.update_held_position()
         sensors.update_containers()
 
+        # Once the worker says "follow me", stop asking and walk behind it to
+        # the shelf (personal space keeps a polite following gap).
+        esc, exy, eprod = read_worker_escort()
+        if state == "ASK_WORKER" and esc and exy is not None:
+            state = "FOLLOW_WORKER"
+            follow_product = eprod
+            ask_wait = 0
+            dwell_remaining = 0
+            action_done = False
+            start_nav(exy[0], exy[1])
+            print(f"{name}: worker is leading me to the {eprod} — following")
+
         if dwell_remaining > 0:
-            driver.stop()
+            # Turn to face what we're interacting with: the shelf while
+            # collecting, the worker while asking for directions.
+            cust_face = None
+            if state == "FOLLOW_WORKER":
+                cust_face = CONTAINER_CENTER.get(
+                    PRODUCT_CONTAINER.get(follow_product, ""))
+            elif state == "ASK_WORKER":
+                cust_face = agent_pose(pb, "Worker_T")
+            if cust_face is not None:
+                driver.face(cust_face[0], cust_face[1])
+            else:
+                driver.stop()
 
             # Wayfinding: hold at the ask point until the worker arrives to
             # point the way (or a max wait), so the interaction reliably fires.
@@ -824,7 +971,10 @@ def _run_customer(robot, timestep, name, agent_id):
 def _run_learner(robot, timestep, name, agent_id, goal_x, goal_y, alpha):
     phase_level = int(os.environ.get("PHASE_LEVEL", "9"))
     driver = TiagoDriver(robot)
-    sensors = TiagoObjectSensors(robot, robot.getSelf(), name)
+    # The learner may read only the OBSERVABLE state of the humans (their
+    # position + body pose) — never their customData (goal/role/published state).
+    sensors = TiagoObjectSensors(robot, robot.getSelf(), name,
+                                 observe_agent_internals=False)
     registry = SkillRegistry()
     tiago_plugin.register(registry, driver)
 
@@ -999,9 +1149,19 @@ def _run_learner(robot, timestep, name, agent_id, goal_x, goal_y, alpha):
             if crystallized and observed_loops >= 2:
                 learned_seq = build_learned_sequence(repertoire)
                 if learned_seq is not None:
+                    # Loop the learned routine so the learner keeps performing
+                    # the worker's job (instead of running it once and idling),
+                    # giving a sustained, legible "the robot now does it" phase.
+                    learned_seq.loop = True
                     scripts_manager.base.set_sequence(learned_seq)
                     print(f"{name}: >>> SWITCHING TO EXECUTION — learned script installed "
-                          f"({len(learned_seq.steps)} steps)")
+                          f"({len(learned_seq.steps)} steps, looping)")
+                    for _i, _st in enumerate(learned_seq.steps):
+                        _g = _st.request.goal or {}
+                        _gs = (f"->({_g.get('x'):.1f},{_g.get('y'):.1f})"
+                               if _st.request.skill == "navigate" else "")
+                        print(f"{name}:    step {_i}: {_st.request.skill}"
+                              f" {_st.request.params.get('action', '')}{_gs}")
                 observe_mode = False
                 observer.reset()
                 # Re-initialise executive with fresh blackboard for execution
@@ -1063,28 +1223,39 @@ def _extract_learner_state(bb, phase_level, gated_tom, repertoire):
         "is_strong": False,
         "patterns": 0,
     }
-    if not bb.percept:
-        return state
+    # Percept-derived fields (intent/speed/affect) are only available while the
+    # percept is live; the executive consumes bb.percept during execution, so we
+    # must NOT gate the pattern read below on it — otherwise is_strong/precision
+    # publish as False right when the learner starts performing, and the HUD
+    # (and the recorder's perform detector) never see the phase flip.
+    if bb.percept:
+        intent_str = getattr(bb, '_compiled_intent', "-")
+        state["intent"] = intent_str
 
-    intent_str = getattr(bb, '_compiled_intent', "-")
-    state["intent"] = intent_str
+        compiled_spd = getattr(bb, '_compiled_speed_scale', None)
+        if compiled_spd is not None:
+            state["speed"] = f"{compiled_spd:.2f}"
 
-    compiled_spd = getattr(bb, '_compiled_speed_scale', None)
-    if compiled_spd is not None:
-        state["speed"] = f"{compiled_spd:.2f}"
+        if phase_level >= 4 and bb.self_affect is not None:
+            state["affect"] = f"{bb.self_affect.arousal:.2f},{bb.self_affect.valence:.2f}"
 
-    if phase_level >= 4 and bb.self_affect is not None:
-        state["affect"] = f"{bb.self_affect.arousal:.2f},{bb.self_affect.valence:.2f}"
+    # Fall back to the last compiled intent even without a live percept so the
+    # recorder still sees a non-OBSERVE intent during the perform phase.
+    if state["intent"] == "-":
+        state["intent"] = getattr(bb, '_compiled_intent', "-")
 
     if repertoire is not None:
         patterns = repertoire.patterns
         state["patterns"] = len(patterns)
         if patterns:
-            # Report the highest-precision pattern
+            # Report the highest-precision pattern...
             best = max(patterns.values(), key=lambda p: p.precision)
             state["pattern"] = best.name
             state["precision"] = round(best.precision, 2)
-            state["is_strong"] = best.is_strong
+            # ...but flag "strong" if ANY pattern has crystallised.  Keying it to
+            # the single max-precision pattern is fragile: a tie with a junk
+            # pattern can flip is_strong off and stall the recorder/HUD phase.
+            state["is_strong"] = any(p.is_strong for p in patterns.values())
 
     return state
 
@@ -1144,6 +1315,55 @@ def _log_learner(name, bb, t, phase_level, gated_tom, repertoire):
 
 
 # ============================================================================
+# REPLAY ACTOR — driven by a recorded real human/robot trajectory
+# ============================================================================
+def _run_replay_actor(robot, timestep, name, traj_file, role) -> None:
+    """Play a recorded trajectory on a human actor (real motion, no scripting)."""
+    from plugins.tiago_webots.robot.replay_driver import ReplayDriver
+
+    driver = ReplayDriver(robot, traj_file, loop=True)
+    self_node = robot.getSelf()
+    SHELVES = {"shelf_a": (-2.0, -5.75), "shelf_b": (1.5, -5.75)}
+    print(f"{name}: REPLAY actor ({role}) <- {os.path.basename(traj_file)}")
+
+    tick = 0
+    while robot.step(timestep) != -1:
+        driver.update()
+        x, y = driver.position
+        reaching = driver.reaching
+
+        # Nearest shelf + nearest other agent (for narration / interaction).
+        nshelf, nsd = None, 1e9
+        for sn, (sx, sy) in SHELVES.items():
+            d = math.hypot(x - sx, y - sy)
+            if d < nsd:
+                nsd, nshelf = d, sn
+        near_shelf = nsd < 1.4
+
+        if role == "worker":
+            action = "stocking" if (reaching and near_shelf) else (
+                "reaching" if reaching else "walking")
+        else:
+            action = "reaching" if reaching else "walking"
+
+        if tick % 10 == 0:
+            try:
+                self_node.getField("customData").setSFString(json.dumps({
+                    "role": role,
+                    "action": action,
+                    "reaching": bool(reaching),
+                    "near_shelf": nshelf if near_shelf else "",
+                }))
+            except Exception:
+                pass
+
+        if tick % 120 == 0:
+            print(f"{name}: t={robot.getTime():.1f} pos=({x:.2f},{y:.2f}) "
+                  f"{action}")
+        tick += 1
+
+
+# ============================================================================
 # MAIN ENTRY POINT
 # ============================================================================
 def main() -> None:
@@ -1174,12 +1394,31 @@ def main() -> None:
         if len(parts) >= 4:
             agent_id = int(parts[3])
 
+    # Humans (Pedestrian) carry no customData config — assign the role from the
+    # node name, which every actor has.
+    NAME_ROLE = {"Worker_T": 0, "Learner_L": 1, "Customer_1": 2}
+    if name in NAME_ROLE:
+        agent_id = NAME_ROLE[name]
+
     print(f"{'='*60}")
     print(f"{name}: RETAIL DEMO  goal=({goal_x},{goal_y}) alpha={alpha} id={agent_id}")
     print(f"{'='*60}")
 
+    # Replay mode: drive the human actors from recorded real trajectories.
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _replay_dir = os.path.normpath(os.path.join(
+        _here, os.pardir, os.pardir, os.pardir, "data", "replay"))
+    replay = os.environ.get("REPLAY_DEMO") == "1"
+    replay_file = {
+        "Worker_T": os.path.join(_replay_dir, "worker.json"),
+        "Customer_1": os.path.join(_replay_dir, "shopper.json"),
+    }.get(name)
+
     try:
-        if agent_id == 0:
+        if replay and replay_file and os.path.isfile(replay_file) and agent_id != 1:
+            role = "worker" if name == "Worker_T" else "shopper"
+            _run_replay_actor(robot, timestep, name, replay_file, role)
+        elif agent_id == 0:
             _run_teacher(robot, timestep, name, agent_id)
         elif agent_id == 1:
             _run_learner(robot, timestep, name, agent_id, goal_x, goal_y, alpha)

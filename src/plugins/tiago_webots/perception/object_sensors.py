@@ -76,10 +76,18 @@ class TiagoObjectSensors(TiagoWebotsSensors):
     # Re-export module-level threshold so instance methods can reference it.
     _HELD_Z_THRESHOLD = _HELD_Z_THRESHOLD
 
-    def __init__(self, robot, self_node, name: str) -> None:
-        super().__init__(robot, self_node, name)
+    def __init__(self, robot, self_node, name: str,
+                 observe_agent_internals: bool = True) -> None:
+        super().__init__(robot, self_node, name,
+                         observe_agent_internals=observe_agent_internals)
         self._object_nodes: List[Dict[str, Any]] = []
         self._held_object: Optional[Dict[str, Any]] = None
+        # Smooth (non-teleport) manipulation: items glide to the hand on grasp
+        # and to their destination on release over a fraction of a second.
+        self._attach: Optional[Dict[str, Any]] = None    # in-progress grasp
+        self._transits: List[Dict[str, Any]] = []         # in-progress releases
+        self._transiting_ids: set = set()
+        self._dt = robot.getBasicTimeStep() / 1000.0
         self._placed_ids: set = set()
         self._furniture_data: List[Dict[str, Any]] = []
         self._manipulation_target_id: Optional[str] = None
@@ -555,6 +563,9 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         its contents, so other robots do not lag one frame behind or fight
         over the item positions.
         """
+        # Advance any items mid-glide to their released destination first.
+        self.update_transits()
+
         for container in self._containers.values():
             try:
                 pos = container["node"].getField("translation").getSFVec3f()
@@ -569,6 +580,9 @@ class TiagoObjectSensors(TiagoWebotsSensors):
                 ox, oy, oz = item["offset"]
                 new_pos = (cx + ox, cy + oy, cz + oz)
                 if self._held_object and self._held_object["id"] == item["id"]:
+                    continue
+                # Don't fight an item still gliding into the container.
+                if item["id"] in self._transiting_ids:
                     continue
                 for obj_info in self._object_nodes:
                     if obj_info["id"] != item["id"]:
@@ -652,28 +666,17 @@ class TiagoObjectSensors(TiagoWebotsSensors):
 
         for obj_info in self._object_nodes:
             if obj_info["id"] == object_id:
-                robot_pos = self._get_position()
                 node = obj_info["node"]
-
-                # Teleport to robot's gripper position (slightly in front)
-                heading = self._get_heading()
-                gripper_x = robot_pos[0] + 0.3 * math.cos(heading)
-                gripper_y = robot_pos[1] + 0.3 * math.sin(heading)
-                gripper_z = GRIPPER_Z  # TIAGo gripper height when extended
-
                 try:
-                    trans_field = node.getField("translation")
-                    trans_field.setSFVec3f([gripper_x, gripper_y, gripper_z])
-                    # Keep the carried object upright and kill residual velocity
-                    rot_field = node.getField("rotation")
-                    if rot_field:
-                        rot_field.setSFRotation([0, 0, 1, 0])
-                    node.resetPhysics()
+                    # Record where the item starts so it can glide to the hand
+                    # (smooth pick-up) rather than popping there instantly.
+                    start = list(node.getField("translation").getSFVec3f())
                     # If it was sitting in a container, remove it from there
                     self._remove_from_container(object_id)
                     # Unfreeze in case the item was a frozen static prop
                     self._unfreeze_object(obj_info)
                     self._held_object = obj_info
+                    self._attach = {"start": start, "progress": 0.0}
                     return True
                 except Exception:
                     return False
@@ -740,46 +743,87 @@ class TiagoObjectSensors(TiagoWebotsSensors):
         if self._held_object is None:
             return False
 
-        node = self._held_object["node"]
+        obj = self._held_object
+        node = obj["node"]
         try:
-            trans_field = node.getField("translation")
-            trans_field.setSFVec3f(list(position))
-            # Place upright and zero velocity so the object settles cleanly
-            rot_field = node.getField("rotation")
-            if rot_field:
-                rot_field.setSFRotation([0, 0, 1, 0])
-            node.resetPhysics()
+            start = list(node.getField("translation").getSFVec3f())
+            # Glide the item to its destination over RELEASE_TIME instead of
+            # popping it there.  Freeze (if any) is applied on arrival.
+            self._transits.append({
+                "node": node, "obj": obj, "start": start, "end": list(position),
+                "progress": 0.0, "freeze": freeze,
+            })
+            self._transiting_ids.add(obj["id"])
             if mark_placed:
-                self._placed_ids.add(self._held_object["id"])
-            if freeze:
-                self._freeze_object(self._held_object)
+                self._placed_ids.add(obj["id"])
             self._held_object = None
+            self._attach = None
             return True
         except Exception:
             return False
 
+    ATTACH_TIME = 0.45   # s — glide a grasped item into the hand
+    RELEASE_TIME = 0.5   # s — glide a released item to its destination
+
+    @staticmethod
+    def _ease(p: float) -> float:
+        p = max(0.0, min(1.0, p))
+        return p * p * (3.0 - 2.0 * p)   # smoothstep
+
     def update_held_position(self) -> None:
-        """Keep held object attached to robot's gripper each tick."""
+        """Keep held object at the gripper; glide it in on a fresh grasp."""
         if self._held_object is None:
             return
 
         robot_pos = self._get_position()
         heading = self._get_heading()
-        gripper_x = robot_pos[0] + 0.3 * math.cos(heading)
-        gripper_y = robot_pos[1] + 0.3 * math.sin(heading)
-        gripper_z = GRIPPER_Z
+        gripper = [robot_pos[0] + 0.3 * math.cos(heading),
+                   robot_pos[1] + 0.3 * math.sin(heading),
+                   GRIPPER_Z]
 
         try:
             node = self._held_object["node"]
             trans_field = node.getField("translation")
-            trans_field.setSFVec3f([gripper_x, gripper_y, gripper_z])
-            # Cancel drift/roll that builds up while being carried
-            rot_field = node.getField("rotation")
-            if rot_field:
-                rot_field.setSFRotation([0, 0, 1, 0])
+            if self._attach is not None and self._attach["progress"] < 1.0:
+                # Smoothly travel from where it was picked up into the hand.
+                e = self._ease(self._attach["progress"])
+                s = self._attach["start"]
+                pos = [s[i] * (1.0 - e) + gripper[i] * e for i in range(3)]
+                self._attach["progress"] += self._dt / self.ATTACH_TIME
+                trans_field.setSFVec3f(pos)
+            else:
+                self._attach = None
+                trans_field.setSFVec3f(gripper)
+                rot_field = node.getField("rotation")
+                if rot_field:
+                    rot_field.setSFRotation([0, 0, 1, 0])
             node.resetPhysics()
         except Exception:
             pass
+
+    def update_transits(self) -> None:
+        """Advance in-flight released items gliding to their destination."""
+        for tr in self._transits[:]:
+            node = tr["node"]
+            tr["progress"] += self._dt / self.RELEASE_TIME
+            e = self._ease(tr["progress"])
+            s, en = tr["start"], tr["end"]
+            try:
+                pos = [s[i] * (1.0 - e) + en[i] * e for i in range(3)]
+                node.getField("translation").setSFVec3f(pos)
+                if tr["progress"] >= 1.0:
+                    node.getField("translation").setSFVec3f(list(en))
+                    rot = node.getField("rotation")
+                    if rot:
+                        rot.setSFRotation([0, 0, 1, 0])
+                    node.resetPhysics()
+                    if tr.get("freeze"):
+                        self._freeze_object(tr["obj"])
+                    self._transiting_ids.discard(tr["obj"]["id"])
+                    self._transits.remove(tr)
+            except Exception:
+                self._transiting_ids.discard(tr["obj"]["id"])
+                self._transits.remove(tr)
 
     @property
     def held_object_id(self) -> Optional[str]:

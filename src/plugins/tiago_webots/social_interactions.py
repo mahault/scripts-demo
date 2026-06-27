@@ -149,9 +149,10 @@ class WorkerEncounterManager:
             backed = (math.hypot(cx - self._backoff_origin[0],
                                  cy - self._backoff_origin[1])
                       if self._backoff_origin else 0.0)
-            # Reverse until we have opened a gap or hit the backoff cap.
+            # Step aside until we have opened a gap or hit the backoff cap
+            # (humans strafe; the wheeled base falls back to reversing).
             if dist < self.CLEAR_RANGE and backed < self.MAX_BACKOFF:
-                driver.creep(-self.BACKOFF_SPEED)
+                driver.yield_aside(cust[0], cust[1], self.BACKOFF_SPEED)
                 return EncounterResult(True, ACT_YIELD, False)
             # Gap opened (or cannot back up further): hold and acknowledge.
             driver.stop()
